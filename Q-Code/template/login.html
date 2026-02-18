@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-Code | Smart Queue</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #10b981;
+            --dark: #0f172a;
+            --bg: #f8fafc;
+            --text: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        nav {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5%;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--dark);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 140px 5% 60px;
+            text-align: center;
+            min-height: 100vh;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .hero img {
+            width: 90%;
+            max-width: 500px;
+            border-radius: 24px;
+            margin-top: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        /* Modal Logic */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #94a3b8;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            margin: 15px 0;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="#" class="logo">Q-<span>Code</span></a>
+        <a href="admin-login.html" style="text-decoration:none; color:var(--dark); font-weight:600;">Admin Portal</a>
+    </nav>
+
+    <section class="hero">
+        <h1>Wait from anywhere,<br>not in a line.</h1>
+        <p style="color:#64748b; margin-bottom:30px; font-size: 1.1rem; max-width: 500px;">Join your destination's
+            digital queue with a single code and track your status in real-time.</p>
+        <button class="btn btn-primary" onclick="openModal()">Join Queue Now</button>
+        <img src="hero-woman.png" alt="Q-Code User Interface Illustration">
+    </section>
+
+    <div class="modal-overlay" id="joinModal">
+        <div class="modal">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="m-title" style="margin-bottom: 8px;">Join Queue</h2>
+            <p id="m-desc" style="font-size:0.9rem; color:#64748b;">Enter your phone number to receive a verification
+                code.</p>
+
+            <div id="step-1">
+                <input type="tel" id="phone" placeholder="Phone Number (e.g. 080123...)">
+                <button class="btn btn-primary" style="width:100%" onclick="sendCode()">Send Code</button>
+            </div>
+
+            <div id="step-2" style="display:none;">
+                <input type="number" id="otp" placeholder="Enter 4-digit Code">
+                <button class="btn btn-primary" style="width:100%" onclick="verifyAndGo()">Verify & Join</button>
+                <p style="text-align:center; margin-top:15px; font-size:0.8rem; color:#94a3b8; cursor:pointer;"
+                    onclick="location.reload()">Back to phone entry</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('joinModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('joinModal').style.display = 'none';
+        }
+
+        function sendCode() {
+            const phoneVal = document.getElementById('phone').value.trim();
+            // Basic validation
+            if (phoneVal.length < 10) {
+                return alert("Please enter a valid phone number");
+            }
+
+            // Persistence for the session
+            localStorage.setItem('userPhone', phoneVal);
+
+            // UI Transition
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+            document.getElementById('m-title').innerText = "Verify Phone";
+            document.getElementById('m-desc').innerText = `We've sent a code to ${phoneVal}.`;
+
+            // Note: This is where we trigger the backend OTP SMS API
+            console.log("OTP Request sent for: " + phoneVal);
+        }
+
+        function verifyAndGo() {
+            const otpVal = document.getElementById('otp').value;
+            if (otpVal.length !== 4) {
+                return alert("Please enter the 4-digit code provided.");
+            }
+
+            // Note: This is where we verify the OTP against the backend
+            console.log("Verifying OTP...");
+
+            // Redirection to the User Dashboard
+            window.location.href = "User.html";
+        }
+
+        // UX: Close modal on outside click
+        window.onclick = function (event) {
+            const modal = document.getElementById('joinModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+
+</html>
