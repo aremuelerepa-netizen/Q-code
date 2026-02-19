@@ -174,60 +174,61 @@
     </div>
 
     <script>
-        // Initialize Icons
-        lucide.createIcons();
+    // Initialize Icons
+    lucide.createIcons();
 
-        const loginForm = document.getElementById('loginForm');
-        const submitBtn = document.getElementById('submitBtn');
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
 
-        loginForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
+    loginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-            // 1. UI Feedback
-            const originalContent = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.textContent = "AUTHENTICATING...";
+        // 1. UI Feedback
+        submitBtn.disabled = true;
+        submitBtn.textContent = "AUTHENTICATING...";
 
-            // 2. Data Preparation
-            const formData = {
-                orgName: document.getElementById('orgName').value,
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value
-            };
+        // 2. Data Preparation 
+        // Note: We only send email/password to the backend for verification
+        const formData = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
 
-            try {
-                // 3. API Call
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
+        try {
+            // 3. API Call
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
 
-                if (response.ok) {
-                    // 4. Save to LocalStorage ONLY on success
-                    localStorage.setItem('qc_org_name', formData.orgName);
-                    localStorage.setItem('qc_admin_user', formData.email.split('@')[0]);
-                    localStorage.setItem('qc_logged_in', 'true');
+            const result = await response.json();
 
-                    // 5. Redirect
-                    window.location.href = '/admin';
-                } else {
-                    const errorData = await response.json().catch(() => ({}));
-                    alert(errorData.message || "Login Failed. Access Denied.");
-                    resetButton();
-                }
-            } catch (error) {
-                console.error("Auth Error:", error);
-                alert("Connection error. Is the server running?");
+            if (response.ok) {
+                // 4. Save to LocalStorage
+                localStorage.setItem('qc_admin_user', formData.email);
+                localStorage.setItem('qc_logged_in', 'true');
+
+                // 5. Dynamic Redirect based on backend (either /admin or /super-admin)
+                window.location.href = result.redirect; 
+            } else {
+                // This will show "Account pending admin approval" or "Invalid password"
+                alert(result.message || "Login Failed.");
                 resetButton();
             }
+        } catch (error) {
+            console.error("Auth Error:", error);
+            alert("Connection error. Is the backend server running?");
+            resetButton();
+        }
 
-            function resetButton() {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `SECURE LOGIN <i data-lucide="arrow-right"></i>`;
-                lucide.createIcons(); // Re-render the icon after setting innerHTML
-            }
-        });
-    </script>
+        function resetButton() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>SECURE LOGIN</span> <i data-lucide="arrow-right"></i>`;
+            lucide.createIcons(); 
+        }
+    });
+</script>
 </body>
 </html>
+
