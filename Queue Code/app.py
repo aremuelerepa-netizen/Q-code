@@ -1,7 +1,7 @@
 import os
 import json
-import random # Added for OTP generation
-import africastalking
+import random
+import requests  # Required for Termii
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_mail import Mail, Message
 from supabase import create_client, Client
@@ -17,9 +17,30 @@ app.secret_key = os.getenv("FLASK_SECRET", "qcode_2024_dev")
 supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-africastalking.initialize(os.getenv("AT_USERNAME"), os.getenv("AT_API_KEY"))
-at_sms = africastalking.SMS
+# Termii Configuration
+TERMII_API_KEY = os.getenv("TERMII_API_KEY")
+TERMII_SENDER_ID = os.getenv("TERMII_SENDER_ID", "N-Alert") # Default to N-Alert
 
+# Helper function to send SMS via Termii
+def send_sms_via_termii(phone, message):
+    url = "https://api.ng.termii.com/api/sms/send"
+    payload = {
+        "api_key": TERMII_API_KEY,
+        "to": phone,
+        "from": TERMII_SENDER_ID,
+        "sms": message,
+        "type": "plain",
+        "channel": "dnd"  # Use 'dnd' to bypass Nigerian DND restrictions
+    }
+    headers = {'Content-Type': 'application/json'}
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        return response.json()
+    except Exception as e:
+        print(f"Termii Error: {e}")
+        return None
+
+# Mail Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = os.getenv("GMAIL_USER")
@@ -44,25 +65,26 @@ def admin_view():
 
 @app.route('/user-page')
 def user_view():
-    # If session exists, user stays logged in
     if 'user_phone' not in session: return redirect(url_for('home'))
     return render_template('Userpage.html')
 
-# --- 3. OTP VERIFICATION SYSTEM (NEW) ---
+# --- 3. OTP VERIFICATION SYSTEM ---
 
 @app.route('/api/auth/request-otp', methods=['POST'])
 def request_otp():
     phone = request.json.get('phone')
     otp = str(random.randint(100000, 999999))
     
-    # Save OTP to Supabase (Table: otp_codes)
+    # Save to Supabase
     supabase.table("otp_codes").upsert({"phone": phone, "code": otp}).execute()
     
-    try:
-        at_sms.send(f"Your Q-CODE verification code is: {otp}", [phone])
+    # Send via Termii
+    msg = f"Your Q-CODE verification code is: {otp}"
+    result = send_sms_via_termii(phone, msg)
+    
+    if result and result.get("message_id"):
         return jsonify({"status": "sent"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    return jsonify({"status": "error", "message": "Failed to send SMS"}), 500
 
 @app.route('/api/auth/verify-otp', methods=['POST'])
 def verify_otp():
@@ -72,28 +94,24 @@ def verify_otp():
     res = supabase.table("otp_codes").select("code").eq("phone", phone).single().execute()
     
     if res.data and res.data['code'] == user_code:
-        session['user_phone'] = phone # Start persistent session
-        
-        # Check if user already has an active queue record
+        session['user_phone'] = phone
         user_data = supabase.table("queue").select("*").eq("phone", phone).execute()
         is_existing = len(user_data.data) > 0
-        
         return jsonify({
             "status": "success", 
             "is_returning": is_existing,
             "data": user_data.data[0] if is_existing else None
         })
-    
     return jsonify({"status": "invalid_code"}), 401
 
-# --- 4. OFFLINE JOINING WEBHOOK (NEW) ---
+# --- 4. OFFLINE JOINING WEBHOOK (Adjusted for Termii) ---
 
 @app.route('/api/sms/incoming', methods=['POST'])
 def sms_webhook():
-    phone = request.values.get('from')
-    text = request.values.get('text', '').upper().strip()
+    data = request.json
+    phone = data.get('sender')  # Termii uses 'sender'
+    text = data.get('message', '').upper().strip() # Termii uses 'message'
     
-    # Expecting: JOIN [SERVICE_CODE] [NAME]
     if text.startswith("JOIN"):
         parts = text.split(" ")
         if len(parts) >= 3:
@@ -107,7 +125,9 @@ def sms_webhook():
                 "entry_type": "SMS"
             }).execute()
             
-            at_sms.send(f"Success {name}! You are in the queue for {service_code}. Login to Q-Code web to see your dashboard.", [phone])
+            reply = f"Success {name}! You're in the queue for {service_code}. Visit the web app to track your spot."
+            send_sms_via_termii(phone, reply)
+            
     return "OK", 200
 
 # --- 5. AI LOGIC ---
@@ -122,7 +142,7 @@ def ai_chat():
         )
         return jsonify({"reply": response.choices[0].message.content})
     except:
-        return jsonify({"reply": "Error"}), 500
+        return jsonify({"reply": "Error connecting to AI"}), 500
 
 # --- 6. ADMIN & REGISTRATION ---
 @app.route('/api/auth/register', methods=['POST'])
@@ -142,7 +162,8 @@ def register_org():
 def call_next(visitor_id):
     res = supabase.table("queue").select("phone").eq("id", visitor_id).single().execute()
     if res.data:
-        at_sms.send("Q-CODE: It is your turn!", [res.data['phone']])
+        msg = "Q-CODE: It is your turn! Please proceed to the service desk."
+        send_sms_via_termii(res.data['phone'], msg)
         supabase.table("queue").delete().eq("id", visitor_id).execute()
         return jsonify({"status": "called"})
     return jsonify({"status": "not_found"}), 404
@@ -157,5 +178,4 @@ def login_logic():
     except: return jsonify({"status": "error"}), 401
 
 if __name__ == '__main__':
-
     app.run(debug=True, port=5000)
