@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "qcode_2024_dev")
 
 # --- 1. INITIALIZE CLIENTS ---
@@ -157,4 +157,5 @@ def login_logic():
     except: return jsonify({"status": "error"}), 401
 
 if __name__ == '__main__':
+
     app.run(debug=True, port=5000)
