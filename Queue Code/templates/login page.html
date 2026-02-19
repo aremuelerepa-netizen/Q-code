@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-Code | Login to Enterprise</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --accent-cyan: #22d3ee;
+            --accent-blue: #0ea5e9;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --card-glass: rgba(30, 41, 59, 0.4);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg-dark);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Animated Background Gradients */
+        .bg-glow {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, rgba(2, 6, 23, 0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(60px);
+        }
+
+        .login-card {
+            background: var(--card-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 420px;
+            padding: 50px 40px;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .logo-area {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 16px;
+            margin-bottom: 24px;
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.4);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 35px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent-cyan);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border: none;
+            border-radius: 12px;
+            color: var(--bg-dark);
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .footer-links {
+            margin-top: 25px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .footer-links a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-glow" style="top: -100px; left: -100px;"></div>
+    <div class="bg-glow" style="bottom: -100px; right: -100px;"></div>
+
+    <div class="login-card">
+        <div class="logo-area">
+            <i data-lucide="zap" size="32"></i>
+        </div>
+        <h1>Welcome Back</h1>
+        <p class="subtitle">Access your Q-Code Enterprise Panel</p>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Organization Name</label>
+                <input type="text" id="orgName" placeholder="e.g. Lagos City Hospital" required>
+            </div>
+
+            <div class="form-group">
+                <label>Admin Email</label>
+                <input type="email" id="email" placeholder="admin@company.com" required>
+            </div>
+
+            <div class="form-group">
+                <label>Access Key</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-login">
+                SECURE LOGIN <i data-lucide="arrow-right" size="18"></i>
+            </button>
+        </form>
+
+        <div class="footer-links">
+            Don't have an account? <a href="#">Register Company</a>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Capture the inputs
+            const orgName = document.getElementById('orgName').value;
+            const email = document.getElementById('email').value;
+
+            // SAVE TO LOCALSTORAGE: This is how the dashboard knows what to show
+            localStorage.setItem('qc_org_name', orgName);
+            localStorage.setItem('qc_admin_user', email.split('@')[0]); // Simple username from email
+            localStorage.setItem('qc_logged_in', 'true');
+
+            // Simulate redirect to dashboard
+            const btn = e.target.querySelector('button');
+            btn.innerHTML = "AUTHENTICATING...";
+
+            // This asks app.py to check if the password is correct in Supabase
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value
+                })
+            });
+
+            if (response.ok) {
+                window.location.href = '/admin';
+            } else {
+                btn.innerHTML = 'SECURE LOGIN <i data-lucide="arrow-right" size="18"></i>';
+                alert("Login Failed. Access Denied.");
+            }
+        });
+    </script>
+</body>
+
+</html>

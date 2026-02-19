@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-Code Admin | Enterprise Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --sidebar-bg: #0f172a;
+            --accent-cyan: #22d3ee;
+            --accent-blue: #0ea5e9;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --card-glass: rgba(30, 41, 59, 0.5);
+            --border: rgba(255, 255, 255, 0.1);
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .side-header {
+            padding: 30px 24px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .side-header .logo-box {
+            width: 35px;
+            height: 35px;
+            background: var(--accent-cyan);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg-dark);
+        }
+
+        .org-display {
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            padding: 0 24px 20px;
+            font-weight: 800;
+            opacity: 0.8;
+        }
+
+        .nav-list {
+            padding: 0 16px;
+            flex: 1;
+        }
+
+        .nav-item {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--accent-cyan);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: white;
+            box-shadow: 0 4px 15px rgba(34, 211, 238, 0.2);
+        }
+
+        /* Bottom Actions (Logout) */
+        .side-footer {
+            padding: 20px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .logout-btn {
+            color: var(--text-muted);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        /* Content Area */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            height: 80px;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+        }
+
+        .view-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+            animation: fadeInUp 0.4s ease forwards;
+        }
+
+        /* Form Styling */
+        .card {
+            background: var(--card-glass);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 30px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.6);
+            color: white;
+            outline: none;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+            justify-content: center;
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: var(--bg-dark);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .chip {
+            background: rgba(34, 211, 238, 0.1);
+            padding: 8px 14px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px;
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            color: var(--accent-cyan);
+            font-size: 0.8rem;
+        }
+
+        .chip button {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside>
+        <div class="side-header">
+            <div class="logo-box"><i data-lucide="zap"></i></div>
+            Q-CODE
+        </div>
+        <div class="org-display" id="sidebar-org-name">Organization Name</div>
+
+        <nav class="nav-list">
+            <div class="nav-item active" onclick="switchTab('monitor', this)"><i data-lucide="monitor"></i> Monitor
+            </div>
+            <div class="nav-item" onclick="switchTab('create', this)"><i data-lucide="plus-square"></i> Create Service
+            </div>
+            <div class="nav-item" onclick="switchTab('services', this)"><i data-lucide="layout-grid"></i> My Services
+            </div>
+            <div class="nav-item" onclick="switchTab('history', this)"><i data-lucide="bar-chart-3"></i> Intelligence
+            </div>
+            <div class="nav-item" onclick="switchTab('deleted', this)"><i data-lucide="archive"></i> Restore</div>
+        </nav>
+
+        <div class="side-footer">
+            <div class="logout-btn" onclick="handleLogout()">
+                <i data-lucide="log-out"></i>
+                <span>Logout Session</span>
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h2 id="page-title" style="font-weight: 800;">Monitor</h2>
+                <span
+                    style="background: rgba(34, 211, 238, 0.1); color: var(--accent-cyan); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;"
+                    id="header-org-badge">...</span>
+            </div>
+            <div id="live-clock" style="font-family: monospace; color: var(--accent-cyan); font-weight: bold;">00:00:00
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="text-align: right;">
+                    <div style="font-size:0.85rem; font-weight:800;" id="admin-user-name">Admin User</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">Status: Online</div>
+                </div>
+                <div
+                    style="width:40px; height:40px; background: #1e293b; border-radius:12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);">
+                    <i data-lucide="user" size="18"></i>
+                </div>
+            </div>
+        </header>
+
+        <section id="create" class="view-section">
+            <div class="card" style="max-width: 900px; margin: 0 auto;">
+                <div style="margin-bottom: 30px;">
+                    <h3 style="font-size: 1.5rem; color: var(--accent-cyan);">Initialize New Service Node</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Setup operating windows and parameters for
+                        the AI queue.</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="left-col">
+                        <div class="form-group">
+                            <label>Service Identity</label>
+                            <input type="text" id="inp-service-name" placeholder="e.g., Accounts Dept">
+                        </div>
+                        <div class="form-group">
+                            <label>Operating Hours</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="time" id="inp-start-time" value="09:00">
+                                <input type="time" id="inp-end-time" value="17:00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Avg. Session Time (Mins)</label>
+                            <input type="number" id="inp-est-time" value="10">
+                        </div>
+                    </div>
+
+                    <div class="right-col">
+                        <div class="form-group">
+                            <label>Staff Management</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="inp-staff-name" placeholder="Name">
+                                <button class="btn btn-outline" onclick="addItem('staff')">ADD</button>
+                            </div>
+                            <div id="staff-chips" style="margin-top: 10px;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Required User Fields</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="inp-info-field" placeholder="e.g., Ticket ID">
+                                <button class="btn btn-outline" onclick="addItem('info')">ADD</button>
+                            </div>
+                            <div id="info-chips" style="margin-top: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 30px;">
+                    <button class="btn btn-cyan" style="width: 100%; height: 55px;" onclick="publishService()">
+                        <i data-lucide="zap"></i> PUBLISH LIVE NODE
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="monitor" class="view-section active">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+                <div class="card"><label>Queue Size</label>
+                    <h2 id="count-wait" style="font-size: 3rem;">0</h2>
+                </div>
+                <div class="card" style="border: 1px solid var(--accent-cyan);"><label>Active Node</label>
+                    <h2 style="font-size: 3rem; color: var(--accent-cyan);">Ready</h2>
+                </div>
+                <div class="card"><label>System Load</label>
+                    <h2 style="font-size: 3rem;">Optimal</h2>
+                </div>
+            </div>
+        </section>
+
+        <section id="services" class="view-section"></section>
+        <section id="history" class="view-section"></section>
+        <section id="deleted" class="view-section"></section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // ORGANIZATION & AUTH LOGIC
+        function loadOrganizationProfile() {
+            // Falls back to defaults if not found in storage
+            const orgName = localStorage.getItem('qc_org_name') || "Apex Health Group";
+            const adminName = localStorage.getItem('qc_admin_user') || "Admin Sarah";
+
+            document.getElementById('sidebar-org-name').innerText = orgName;
+            document.getElementById('header-org-badge').innerText = orgName;
+            document.getElementById('admin-user-name').innerText = adminName;
+        }
+
+        function handleLogout() {
+            if (confirm("Are you sure you want to end your session?")) {
+                // Here you would clear tokens or Supabase session
+                localStorage.removeItem('qc_logged_in');
+                alert("Logging out...");
+                location.reload(); // Redirect to login in real app
+            }
+        }
+
+        // FORM LOGIC
+        let currentStaff = [];
+        let currentInfoFields = ['Full Name'];
+
+        function addItem(type) {
+            const input = document.getElementById(type === 'staff' ? 'inp-staff-name' : 'inp-info-field');
+            if (!input.value.trim()) return;
+            if (type === 'staff') {
+                currentStaff.push(input.value.trim());
+                renderChips('staff-chips', currentStaff, 'staff');
+            } else {
+                currentInfoFields.push(input.value.trim());
+                renderChips('info-chips', currentInfoFields, 'info');
+            }
+            input.value = '';
+        }
+
+        function renderChips(containerId, data, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = data.map((item, idx) => `
+                <div class="chip">${item}<button onclick="removeItem('${type}', ${idx})">&times;</button></div>
+            `).join('');
+        }
+
+        function removeItem(type, idx) {
+            if (type === 'staff') currentStaff.splice(idx, 1);
+            else currentInfoFields.splice(idx, 1);
+            renderChips(type === 'staff' ? 'staff-chips' : 'info-chips', type === 'staff' ? currentStaff : currentInfoFields, type);
+        }
+
+        function switchTab(id, el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('page-title').innerText = el.innerText;
+        }
+
+        function publishService() {
+            alert("Service Node initialized and live!");
+        }
+
+        // Init
+        loadOrganizationProfile();
+        renderChips('info-chips', currentInfoFields, 'info');
+        setInterval(() => {
+            document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+    </script>
+</body>
+
+</html>

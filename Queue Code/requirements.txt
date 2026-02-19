@@ -1,0 +1,7 @@
+flask
+flask-mail
+supabase
+groq
+africastalking
+python-dotenv
+gunicorn

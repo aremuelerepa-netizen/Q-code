@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Q-Code | Skip the Line</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+        }
+
+        .glass-modal {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(16px);
+        }
+
+        .electric-gradient {
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+        }
+
+        .text-gradient {
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="text-white overflow-x-hidden">
+
+    <nav class="flex items-center justify-between px-6 py-6 max-w-7xl mx-auto">
+        <div class="flex items-center gap-2">
+            <div
+                class="w-10 h-10 electric-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+                <i data-lucide="zap"></i>
+            </div>
+            <span class="text-2xl font-black tracking-tighter uppercase">Q-CODE</span>
+        </div>
+        <a href="/register"
+            class="text-sm font-bold text-cyan-400 hover:text-white transition px-5 py-2.5 border border-cyan-500/30 rounded-full bg-cyan-500/5">
+            Create a Queue
+        </a>
+    </nav>
+
+    <section class="max-w-4xl mx-auto px-6 pt-24 pb-32 text-center">
+        <div
+            class="mb-10 inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full">
+            <span class="relative flex h-2 w-2">
+                <span
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+            </span>
+            <p class="text-xs md:text-sm font-bold text-cyan-400 uppercase tracking-widest">
+                Offline? Text JOIN [Code] to 09021443783
+            </p>
+        </div>
+
+        <h1 class="text-6xl md:text-8xl font-black mb-8 leading-tight tracking-tight text-gradient">
+            Queue from <br>
+            <span class="text-cyan-400 italic">anywhere.</span>
+        </h1>
+        <p class="text-xl text-slate-400 mb-12 max-w-xl mx-auto leading-relaxed">
+            The intelligent waitlist for modern businesses.
+            Join the line with your phone and get notified instantly.
+        </p>
+
+        <div class="flex flex-col items-center justify-center gap-6">
+            <button onclick="openModal()"
+                class="w-full md:w-96 px-8 py-6 electric-gradient text-white font-black rounded-2xl shadow-2xl shadow-cyan-500/40 hover:scale-105 transition-transform active:scale-95 text-2xl">
+                Join a Queue
+            </button>
+            <p class="text-sm text-slate-500 font-medium tracking-wide">Secure • Instant • Verified</p>
+        </div>
+    </section>
+
+    <div id="joinModal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-modal w-full max-w-md rounded-3xl p-8 shadow-2xl relative text-slate-900">
+            <button onclick="closeModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x"></i>
+            </button>
+
+            <div id="step-phone" class="space-y-6">
+                <div class="text-center">
+                    <h2 class="text-2xl font-black">Identify Yourself</h2>
+                    <p class="text-slate-500 mt-2">Enter your phone number to continue</p>
+                </div>
+                <input type="tel" id="phoneInput" placeholder="080 000 0000"
+                    class="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 focus:border-cyan-500 focus:bg-white rounded-2xl outline-none transition-all text-center text-xl font-bold">
+                <button onclick="requestOTP()"
+                    class="w-full py-4 electric-gradient text-white font-black rounded-2xl shadow-lg hover:opacity-90 transition">
+                    Get Verification Code
+                </button>
+            </div>
+
+            <div id="step-otp" class="hidden space-y-6">
+                <div class="text-center">
+                    <h2 class="text-2xl font-black">Verify OTP</h2>
+                    <p class="text-slate-500 mt-2">Check your messages for the 4-digit code</p>
+                </div>
+                <div class="flex justify-center gap-3">
+                    <input type="number"
+                        class="otp-field w-14 h-16 text-center text-2xl font-black bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-cyan-500 outline-none">
+                    <input type="number"
+                        class="otp-field w-14 h-16 text-center text-2xl font-black bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-cyan-500 outline-none">
+                    <input type="number"
+                        class="otp-field w-14 h-16 text-center text-2xl font-black bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-cyan-500 outline-none">
+                    <input type="number"
+                        class="otp-field w-14 h-16 text-center text-2xl font-black bg-slate-50 rounded-xl border-2 border-slate-100 focus:border-cyan-500 outline-none">
+                </div>
+                <button onclick="verifyAndRedirect()"
+                    class="w-full py-4 electric-gradient text-white font-black rounded-2xl shadow-lg hover:opacity-90 transition">
+                    Verify & Continue
+                </button>
+                <button onclick="resetModal()" class="w-full text-sm text-slate-400 font-medium hover:text-cyan-600">
+                    Use a different number
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const modal = document.getElementById('joinModal');
+        const stepPhone = document.getElementById('step-phone');
+        const stepOtp = document.getElementById('step-otp');
+
+        function openModal() { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        function closeModal() { modal.classList.add('hidden'); document.body.style.overflow = 'auto'; resetModal(); }
+        function requestOTP() {
+            const phone = document.getElementById('phoneInput').value;
+            if (phone.length < 10) { alert("Enter a valid number"); return; }
+            stepPhone.classList.add('hidden');
+            stepOtp.classList.remove('hidden');
+        }
+        async function verifyAndRedirect() {
+            const phone = document.getElementById('phoneInput').value;
+            const code = document.getElementById('joinInput')?.value || "GEN01"; // Default code
+
+            // REAL CALL: Tells app.py to put this user in the Supabase database
+            const response = await fetch('/api/queue/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone, service_code: code })
+            });
+
+            if (response.ok) {
+                localStorage.setItem('userPhone', phone);
+                window.location.href = "/user-page";
+            } else {
+                alert("Invalid Service Code. Please check and try again.");
+            }
+        }
+        function resetModal() { stepPhone.classList.remove('hidden'); stepOtp.classList.add('hidden'); }
+
+        document.querySelectorAll('.otp-field').forEach((field, index, all) => {
+            field.addEventListener('input', (e) => {
+                if (e.target.value && index < all.length - 1) all[index + 1].focus();
+            });
+        });
+    </script>
+</body>
+
+</html>
