@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Q-Code | Internal Admin</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background: #020617; color: white; font-family: 'Inter', sans-serif; padding: 40px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { border-bottom: 1px solid #1e293b; padding-bottom: 10px; }
+        .card { 
+            background: rgba(30, 41, 59, 0.4); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .btn-approve {
+            background: #22d3ee; color: #020617; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        .btn-approve:disabled { background: #475569; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pending Approvals</h1>
+        <div id="list">
+            {% for org in pending_orgs %}
+            <div class="card" id="org-{{ org.id }}">
+                <div>
+                    <strong>{{ org.name }}</strong><br>
+                    <small>{{ org.email }} | {{ org.phone }}</small>
+                </div>
+                <button class="btn-approve" onclick="approveOrg('{{ org.id }}')">APPROVE & NOTIFY</button>
+            </div>
+            {% else %}
+            <p>No pending registrations. Good job!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        async function approveOrg(id) {
+            const btn = document.querySelector(`#org-${id} button`);
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            const response = await fetch(`/api/admin/approve-org/${id}`, { method: 'POST' });
+            
+            if (response.ok) {
+                document.getElementById(`org-${id}`).style.display = 'none';
+                alert("Organization approved! SMS and Email sent.");
+            } else {
+                alert("Error approving organization.");
+                btn.disabled = false;
+                btn.innerText = "APPROVE & NOTIFY";
+            }
+        }
+    </script>
+</body>
+</html>
