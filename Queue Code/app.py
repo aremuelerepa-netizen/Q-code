@@ -1,5 +1,4 @@
 import os
-import json
 import random
 import requests
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
@@ -11,7 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET", "qcode_2024_dev")
+# Change this secret key in production
+app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_secure_key")
 
 # --- 1. INITIALIZE CLIENTS ---
 supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
@@ -42,39 +42,126 @@ def send_sms_via_termii(phone, message):
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = os.getenv("GMAIL_USER")
-app.config['MAIL_PASSWORD'] = os.getenv("GMAIL_APP_PASSWORD")
+app.config['MAIL_PASSWORD'] = os.getenv("GMAIL_APP_PASSWORD") # Must be 16-char App Password
 app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("GMAIL_USER")
 mail = Mail(app)
 
 # --- 2. PAGE ROUTING ---
 @app.route('/')
-def home(): return render_template('index.html')
+def home(): 
+    return render_template('index.html')
 
 @app.route('/login')
-def login_view(): return render_template('login page.html')
+def login_view(): 
+    return render_template('login page.html')
 
 @app.route('/register')
-def reg_view(): return render_template('org reg page.html')
+def reg_view(): 
+    return render_template('org reg page.html')
 
 @app.route('/admin')
 def admin_view():
-    if 'org_id' not in session: return redirect(url_for('login_view'))
-    return render_template('Admin page.html')
+    if 'org_id' not in session: 
+        return redirect(url_for('login_view'))
+    return render_template('Admin page.html', org_name=session.get('org_name'))
 
-@app.route('/user-page')
-def user_view():
-    if 'user_phone' not in session: return redirect(url_for('home'))
-    return render_template('Userpage.html')
+# --- 3. AUTHENTICATION (LOGIN & REGISTER) ---
 
-# --- 3. OTP SYSTEM ---
+@app.route('/api/auth/register', methods=['POST'])
+def register_org():
+    org_name = request.form.get('orgName')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    password = request.form.get('password') 
+    uploaded_file = request.files.get('verificationDoc')
+
+    try:
+        # 1. Insert into Supabase with verified=False
+        supabase.table("organizations").insert({
+            "name": org_name, 
+            "email": email, 
+            "phone": phone, 
+            "password": password, 
+            "verified": False
+        }).execute()
+
+        # 2. Notify YOU (The Admin) via Email
+        msg = Message(
+            subject=f"New Registration: {org_name}",
+            recipients=[app.config['MAIL_USERNAME']] # Sends to your own email
+        )
+        msg.body = f"New Organization Request:\nName: {org_name}\nEmail: {email}\nPhone: {phone}\n\nPlease verify this document in Supabase."
+        
+        if uploaded_file:
+            # Important: Read once and attach
+            file_content = uploaded_file.read()
+            msg.attach(uploaded_file.filename, uploaded_file.content_type, file_content)
+
+        mail.send(msg)
+        return jsonify({"status": "success", "message": "Registered! Waiting for admin approval."})
+
+    except Exception as e:
+        print(f"Registration Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    res = supabase.table("organizations").select("*").eq("email", email).execute()
+    
+    if res.data:
+        org = res.data[0]
+        if org['password'] == password:
+            # CHECK VERIFICATION STATUS
+            if org.get('verified') == True:
+                session['org_id'] = org['id']
+                session['org_name'] = org['name']
+                return jsonify({"status": "success", "redirect": "/admin"})
+            else:
+                return jsonify({
+                    "status": "pending", 
+                    "message": "Account pending admin approval. You will receive an email once verified."
+                }), 403
+        return jsonify({"status": "error", "message": "Invalid password"}), 401
+    
+    return jsonify({"status": "error", "message": "Organization not found"}), 404
+
+# --- 4. ADMIN APPROVAL SYSTEM ---
+
+@app.route('/api/admin/approve-org/<int:org_id>', methods=['POST'])
+def approve_org(org_id):
+    # This updates the DB to allow them to login
+    res = supabase.table("organizations").update({"verified": True}).eq("id", org_id).execute()
+    
+    if res.data:
+        org = res.data[0]
+        # Notify the User via Email
+        try:
+            msg = Message("Q-Code: Account Approved!", recipients=[org['email']])
+            msg.body = f"Hello {org['name']}, your account is now active. You can login now."
+            mail.send(msg)
+        except: pass
+
+        # Notify via SMS
+        send_sms_via_termii(org['phone'], "Q-Code: Your account is now active! Log in at the enterprise portal.")
+        
+        return jsonify({"status": "success", "message": "Organization approved and notified."})
+    return jsonify({"status": "error"}), 404
+
+# --- 5. OTP & QUEUE LOGIC ---
+
 @app.route('/api/auth/request-otp', methods=['POST'])
 def request_otp():
     phone = request.json.get('phone')
     otp = str(random.randint(100000, 999999))
     supabase.table("otp_codes").upsert({"phone": phone, "code": otp}).execute()
-    msg = f"Your Q-CODE verification code is: {otp}"
-    result = send_sms_via_termii(phone, msg)
-    if result and result.get("message_id"):
+    
+    result = send_sms_via_termii(phone, f"Your Q-CODE verification code is: {otp}")
+    if result and (result.get("message_id") or result.get("status") == "success"):
         return jsonify({"status": "sent"})
     return jsonify({"status": "error"}), 500
 
@@ -83,81 +170,16 @@ def verify_otp():
     phone = request.json.get('phone')
     user_code = request.json.get('code')
     res = supabase.table("otp_codes").select("code").eq("phone", phone).single().execute()
+    
     if res.data and res.data['code'] == user_code:
         session['user_phone'] = phone
-        user_data = supabase.table("queue").select("*").eq("phone", phone).execute()
-        return jsonify({"status": "success", "is_returning": len(user_data.data) > 0, "data": user_data.data[0] if user_data.data else None})
+        user_queue = supabase.table("queue").select("*").eq("phone", phone).execute()
+        return jsonify({
+            "status": "success", 
+            "is_returning": len(user_queue.data) > 0, 
+            "data": user_queue.data[0] if user_queue.data else None
+        })
     return jsonify({"status": "invalid_code"}), 401
-
-# --- 4. OFFLINE WEBHOOK ---
-@app.route('/api/sms/incoming', methods=['POST'])
-def sms_webhook():
-    data = request.json
-    phone = data.get('sender')
-    text = data.get('message', '').upper().strip()
-    if text.startswith("JOIN"):
-        parts = text.split(" ")
-        if len(parts) >= 3:
-            supabase.table("queue").insert({"visitor_name": " ".join(parts[2:]), "phone": phone, "service_id": parts[1], "entry_type": "SMS"}).execute()
-            send_sms_via_termii(phone, f"Success! You're in the queue. Track at your primary URL.")
-    return "OK", 200
-
-# --- 5. REGISTRATION & ADMIN CONFIRMATION ---
-
-@app.route('/api/auth/register', methods=['POST'])
-def register_org():
-    org_name = request.form.get('orgName')
-    email = request.form.get('email')
-    phone = request.form.get('phone') # Ensure this is in your HTML form
-    uploaded_file = request.files.get('verificationDoc')
-
-    # Save to Supabase (verified=False)
-    supabase.table("organizations").insert({"name": org_name, "email": email, "phone": phone, "verified": False}).execute()
-
-    try:
-        # Alert YOU (the admin)
-        msg = Message(f"New Org Registration: {org_name}", sender=app.config['MAIL_USERNAME'], recipients=[app.config['MAIL_USERNAME']])
-        if uploaded_file:
-            file_data = uploaded_file.read() # Read the file into memory
-            msg.attach(uploaded_file.filename, uploaded_file.content_type, file_data)
-        mail.send(msg)
-        return jsonify({"status": "success", "message": "Pending approval"})
-    except Exception as e:
-        print(f"Mail Error: {e}")
-        return jsonify({"status": "success", "note": "Saved, but alert failed"})
-
-# NEW ROUTE: Call this when YOU click 'Approve' in your admin panel
-@app.route('/api/admin/approve-org/<int:org_id>', methods=['POST'])
-def approve_org(org_id):
-    # 1. Update DB
-    res = supabase.table("organizations").update({"verified": True}).eq("id", org_id).execute()
-    
-    if res.data:
-        target_email = res.data[0]['email']
-        target_phone = res.data[0]['phone']
-        
-        # 2. Send Acceptance Email
-        try:
-            msg = Message("Q-Code: Registration Accepted!", sender=app.config['MAIL_USERNAME'], recipients=[target_email])
-            msg.body = "Your organization has been verified. You can now log in to your dashboard."
-            mail.send(msg)
-        except: pass
-
-        # 3. Send Acceptance SMS
-        send_sms_via_termii(target_phone, "Q-Code: Your account is now active! Log in at your primary URL.")
-        
-        return jsonify({"status": "verified_and_notified"})
-    return jsonify({"status": "error"}), 404
-
-# --- 6. OTHER LOGIC ---
-@app.route('/api/admin/call-next/<int:visitor_id>', methods=['POST'])
-def call_next(visitor_id):
-    res = supabase.table("queue").select("phone").eq("id", visitor_id).single().execute()
-    if res.data:
-        send_sms_via_termii(res.data['phone'], "Q-CODE: It is your turn!")
-        supabase.table("queue").delete().eq("id", visitor_id).execute()
-        return jsonify({"status": "called"})
-    return jsonify({"status": "not_found"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
