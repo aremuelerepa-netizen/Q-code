@@ -8,68 +8,44 @@ from supabase import create_client, Client
 from groq import Groq
 from dotenv import load_dotenv
 
-# 1. Load env before anything else
 load_dotenv()
 
-# --- FOLDER PATH CORRECTION ---
-# This ensures Flask finds your templates even inside "Queue Code"
+# --- 1. DYNAMIC PATH RESOLUTION ---
 base_dir = os.path.dirname(os.path.abspath(__file__))
 template_dir = os.path.join(base_dir, 'templates')
 static_dir = os.path.join(base_dir, 'static')
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
-
-# --- CONFIGURATION ---
-app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_default_key")
+app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_final_key")
 app.permanent_session_lifetime = timedelta(days=1)
 
-# --- 2. INITIALIZE CLIENTS SAFELY ---
-# Lazy initialization prevents the "Port Scan Timeout" on Render
-supabase_client: Client = None
-
+# --- 2. SAFE CLIENT INITIALIZATION ---
+supabase_client = None
 def get_supabase():
     global supabase_client
     if supabase_client is None:
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_KEY")
-        if not url or not key:
-            print("CRITICAL: Supabase credentials missing!")
-            return None
-        try:
-            # We don't use 'supabase: Client =' here to avoid local scoping issues
-            supabase_client = create_client(url, key)
-        except Exception as e:
-            print(f"FAILED TO CONNECT TO SUPABASE: {e}")
-            return None
+        if url and key:
+            try:
+                supabase_client = create_client(url, key)
+            except Exception as e:
+                print(f"Supabase Init Error: {e}")
     return supabase_client
 
+groq_client = None
 def get_groq():
-    api_key = os.getenv("GROQ_API_KEY")
-    return Groq(api_key=api_key) if api_key else None
+    global groq_client
+    if groq_client is None:
+        api_key = os.getenv("GROQ_API_KEY")
+        if api_key:
+            try:
+                groq_client = Groq(api_key=api_key)
+            except Exception as e:
+                print(f"Groq Init Error: {e}")
+    return groq_client
 
-# Termii Config
-TERMII_API_KEY = os.getenv("TERMII_API_KEY")
-TERMII_SENDER_ID = os.getenv("TERMII_SENDER_ID", "N-Alert")
-
-def send_sms_via_termii(phone, message):
-    if not TERMII_API_KEY: return None
-    url = "https://api.ng.termii.com/api/sms/send"
-    payload = {
-        "api_key": TERMII_API_KEY,
-        "to": phone,
-        "from": TERMII_SENDER_ID,
-        "sms": message,
-        "type": "plain",
-        "channel": "dnd"
-    }
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        return response.json()
-    except Exception as e:
-        print(f"Termii Error: {e}")
-        return None
-
-# Mail Config
+# --- 3. MAIL CONFIG ---
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
     MAIL_PORT=465,
@@ -80,7 +56,7 @@ app.config.update(
 )
 mail = Mail(app)
 
-# --- 3. PAGE ROUTING ---
+# --- 4. PAGE ROUTING ---
 
 @app.route('/')
 def home(): 
@@ -96,8 +72,7 @@ def reg_view():
 
 @app.route('/admin')
 def admin_view():
-    if 'org_id' not in session: 
-        return redirect(url_for('login_view'))
+    if 'org_id' not in session: return redirect(url_for('login_view'))
     return render_template('Admin page.html', org_name=session.get('org_name'))
 
 @app.route('/super-admin')
@@ -106,21 +81,17 @@ def super_admin_view():
         return redirect(url_for('login_view'))
     
     db = get_supabase()
-    if not db:
-        return "Database Error: Please check Render environment variables.", 500
+    pending_orgs = []
+    if db:
+        try:
+            res = db.table("organizations").select("*").eq("verified", False).execute()
+            pending_orgs = res.data
+        except Exception as e:
+            print(f"DB Fetch Error: {e}")
+            
+    return render_template('super_admin.html', pending_orgs=pending_orgs)
 
-    try:
-        res = db.table("organizations").select("*").eq("verified", False).execute()
-        return render_template('super_admin.html', pending_orgs=res.data)
-    except Exception as e:
-        return f"Database Fetch Error: {e}", 500
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login_view'))
-
-# --- 4. AUTHENTICATION ---
+# --- 5. AUTHENTICATION ---
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -135,56 +106,30 @@ def login():
         return jsonify({"status": "success", "redirect": "/super-admin"})
 
     db = get_supabase()
-    if not db:
-        return jsonify({"status": "error", "message": "Database disconnected"}), 500
+    if not db: return jsonify({"status": "error", "message": "DB disconnected"}), 500
 
     try:
         res = db.table("organizations").select("*").eq("email", email).execute()
-        if res.data:
+        if res.data and res.data[0]['password'] == password:
             org = res.data[0]
-            if org['password'] == password:
-                if org.get('verified'):
-                    session.clear()
-                    session.permanent = True
-                    session['org_id'] = str(org['id'])
-                    session['org_name'] = org['name']
-                    session['is_super_admin'] = False
-                    return jsonify({"status": "success", "redirect": "/admin"})
-                return jsonify({"status": "pending", "message": "Account awaiting verification."}), 403
-            return jsonify({"status": "error", "message": "Incorrect password."}), 401
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Database query failed."}), 500
-    
-    return jsonify({"status": "error", "message": "User not found."}), 404
-
-@app.route('/api/auth/register', methods=['POST'])
-def register_org():
-    db = get_supabase()
-    if not db: return jsonify({"status": "error", "message": "Database offline"}), 500
-    
-    org_name = request.form.get('orgName')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
-    password = request.form.get('password') 
-    uploaded_file = request.files.get('verificationDoc')
-
-    try:
-        db.table("organizations").insert({
-            "name": org_name, "email": email, "phone": phone, 
-            "password": password, "verified": False
-        }).execute()
-
-        msg = Message(f"URGENT: New Org {org_name}", recipients=[app.config['MAIL_USERNAME']])
-        msg.body = f"Review Request:\nName: {org_name}\nEmail: {email}"
-        if uploaded_file:
-            msg.attach(uploaded_file.filename, uploaded_file.content_type, uploaded_file.read())
-
-        mail.send(msg)
-        return jsonify({"status": "success", "message": "Application submitted."})
+            if org.get('verified'):
+                session.clear()
+                session.permanent = True
+                session['org_id'] = str(org['id'])
+                session['org_name'] = org['name']
+                session['is_super_admin'] = False
+                return jsonify({"status": "success", "redirect": "/admin"})
+            return jsonify({"status": "pending", "message": "Verification required"}), 403
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+    return jsonify({"status": "error", "message": "Invalid login"}), 401
 
-# --- STARTUP ---
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login_view'))
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
