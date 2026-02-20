@@ -14,32 +14,43 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
+# Use a strong secret key for session signing
 app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_default_key")
 app.permanent_session_lifetime = timedelta(days=1)
 
 # --- 2. INITIALIZE CLIENTS SAFELY ---
-# We wrap this in a check to prevent the app from crashing during build
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# We use a global variable but initialize it lazily to prevent startup hangs
+supabase_client: Client = None
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("CRITICAL: Supabase credentials missing!")
-    supabase = None
-else:
-    try:
-        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception as e:
-        print(f"FAILED TO CONNECT TO SUPABASE: {e}")
-        supabase = None
+def get_supabase():
+    global supabase_client
+    if supabase_client is None:
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_KEY")
+        if not url or not key:
+            print("CRITICAL: Supabase credentials missing from Environment Variables!")
+            return None
+        try:
+            supabase_client = create_client(url, key)
+        except Exception as e:
+            print(f"FAILED TO CONNECT TO SUPABASE: {e}")
+            return None
+    return supabase_client
 
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Initialize Groq (Lazy check)
+def get_groq():
+    api_key = os.getenv("GROQ_API_KEY")
+    if api_key:
+        return Groq(api_key=api_key)
+    return None
 
 # Termii Config
 TERMII_API_KEY = os.getenv("TERMII_API_KEY")
 TERMII_SENDER_ID = os.getenv("TERMII_SENDER_ID", "N-Alert")
 
 def send_sms_via_termii(phone, message):
-    if not TERMII_API_KEY: return None
+    if not TERMII_API_KEY: 
+        return None
     url = "https://api.ng.termii.com/api/sms/send"
     payload = {
         "api_key": TERMII_API_KEY,
@@ -92,11 +103,12 @@ def super_admin_view():
     if not session.get('is_super_admin'):
         return redirect(url_for('login_view'))
     
-    if not supabase:
-        return "Database Configuration Error. Please check API Keys.", 500
+    db = get_supabase()
+    if not db:
+        return "Database Configuration Error. Please check Render Environment Variables.", 500
 
     try:
-        res = supabase.table("organizations").select("*").eq("verified", False).execute()
+        res = db.table("organizations").select("*").eq("verified", False).execute()
         return render_template('super_admin.html', pending_orgs=res.data)
     except Exception as e:
         print(f"Admin Fetch Error: {e}")
@@ -118,19 +130,20 @@ def login():
     if not email or not password:
         return jsonify({"status": "error", "message": "Missing credentials"}), 400
 
-    # A. MASTER ADMIN LOGIN (Checks ENV first - doesn't need Supabase)
+    # A. MASTER ADMIN LOGIN (Direct ENV check)
     if email == os.getenv("ADMIN_EMAIL") and password == os.getenv("ADMIN_PASSWORD"):
         session.clear()
         session.permanent = True
         session['is_super_admin'] = True
         return jsonify({"status": "success", "redirect": "/super-admin"})
 
-    # B. ORGANIZATION LOGIN (Needs Supabase)
-    if not supabase:
+    # B. ORGANIZATION LOGIN
+    db = get_supabase()
+    if not db:
         return jsonify({"status": "error", "message": "Database disconnected"}), 500
 
     try:
-        res = supabase.table("organizations").select("*").eq("email", email).execute()
+        res = db.table("organizations").select("*").eq("email", email).execute()
         if res.data:
             org = res.data[0]
             if org['password'] == password:
@@ -154,7 +167,9 @@ def login():
 
 @app.route('/api/auth/register', methods=['POST'])
 def register_org():
-    if not supabase: return jsonify({"status": "error", "message": "Database offline"}), 500
+    db = get_supabase()
+    if not db: 
+        return jsonify({"status": "error", "message": "Database offline"}), 500
     
     org_name = request.form.get('orgName')
     email = request.form.get('email')
@@ -163,7 +178,7 @@ def register_org():
     uploaded_file = request.files.get('verificationDoc')
 
     try:
-        supabase.table("organizations").insert({
+        db.table("organizations").insert({
             "name": org_name, "email": email, "phone": phone, 
             "password": password, "verified": False
         }).execute()
@@ -174,12 +189,12 @@ def register_org():
             msg.attach(uploaded_file.filename, uploaded_file.content_type, uploaded_file.read())
 
         mail.send(msg)
-        return jsonify({"status": "success", "message": "Application submitted."})
+        return jsonify({"status": "success", "message": "Application submitted successfully."})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # --- STARTUP ---
 if __name__ == '__main__':
-    # Use 0.0.0.0 for Render and dynamically find the PORT
-    port = int(os.environ.get("PORT", 5000))
+    # Render requires host 0.0.0.0 and a dynamic port
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
