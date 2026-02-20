@@ -200,6 +200,9 @@ def request_otp():
     supabase.table("otp_codes").upsert({"phone": phone, "code": otp}).execute()
     send_sms_via_termii(phone, f"Your Q-CODE verification code is: {otp}")
     return jsonify({"status": "sent"})
-
+    
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Use the PORT environment variable if it exists (for Render), otherwise default to 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
