@@ -30,6 +30,23 @@
             overflow: hidden;
         }
 
+        /* Back to Home Button */
+        .back-home {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: 0.3s;
+            z-index: 100;
+        }
+        .back-home:hover { color: var(--accent-cyan); }
+
         .bg-glow {
             position: absolute;
             width: 500px;
@@ -137,6 +154,8 @@
 </head>
 <body>
 
+    <a href="/" class="back-home"><i data-lucide="chevron-left"></i> BACK TO HOME</a>
+
     <div class="bg-glow" style="top: -100px; left: -100px;"></div>
     <div class="bg-glow" style="bottom: -100px; right: -100px;"></div>
 
@@ -148,11 +167,6 @@
         <p class="subtitle">Access your Q-Code Enterprise Panel</p>
 
         <form id="loginForm">
-            <div class="form-group">
-                <label for="orgName">Organization Name</label>
-                <input type="text" id="orgName" placeholder="e.g. Lagos City Hospital" required>
-            </div>
-
             <div class="form-group">
                 <label for="email">Admin Email</label>
                 <input type="email" id="email" placeholder="admin@company.com" required>
@@ -169,66 +183,63 @@
         </form>
 
         <div class="footer-links">
-            Don't have an account? <a href="org reg page.html">Register Company</a>
+            Don't have an account? <a href="/register">Register Company</a>
         </div>
     </div>
 
     <script>
-    // Initialize Icons
-    lucide.createIcons();
+        lucide.createIcons();
 
-    const loginForm = document.getElementById('loginForm');
-    const submitBtn = document.getElementById('submitBtn');
+        const loginForm = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
 
-    loginForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        // 1. UI Feedback
-        submitBtn.disabled = true;
-        submitBtn.textContent = "AUTHENTICATING...";
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>VERIFYING...</span>`;
 
-        // 2. Data Preparation 
-        // Note: We only send email/password to the backend for verification
-        const formData = {
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value
-        };
+            const formData = {
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
 
-        try {
-            // 3. API Call
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
 
-            const result = await response.json();
+                const result = await response.json();
 
-            if (response.ok) {
-                // 4. Save to LocalStorage
-                localStorage.setItem('qc_admin_user', formData.email);
-                localStorage.setItem('qc_logged_in', 'true');
-
-                // 5. Dynamic Redirect based on backend (either /admin or /super-admin)
-                window.location.href = result.redirect; 
-            } else {
-                // This will show "Account pending admin approval" or "Invalid password"
-                alert(result.message || "Login Failed.");
+                if (response.ok) {
+                    // Success (Owner or Verified Org)
+                    window.location.href = result.redirect; 
+                } else if (response.status === 403) {
+                    // Scenario: Pending verification
+                    alert("ACCESS DENIED: Your account is still being reviewed by our team. You will receive an email/SMS once verified.");
+                    resetButton();
+                } else if (response.status === 404) {
+                    // Scenario: Not in database
+                    alert("USER NOT FOUND: This email is not registered with Q-Code. Please register your organization first.");
+                    resetButton();
+                } else {
+                    // Scenario: Wrong password
+                    alert(result.message || "Invalid credentials.");
+                    resetButton();
+                }
+            } catch (error) {
+                alert("Server Connection Error. Please try again later.");
                 resetButton();
             }
-        } catch (error) {
-            console.error("Auth Error:", error);
-            alert("Connection error. Is the backend server running?");
-            resetButton();
-        }
+        });
 
         function resetButton() {
             submitBtn.disabled = false;
             submitBtn.innerHTML = `<span>SECURE LOGIN</span> <i data-lucide="arrow-right"></i>`;
-            lucide.createIcons(); 
+            lucide.createIcons();
         }
-    });
-</script>
+    </script>
 </body>
 </html>
-
