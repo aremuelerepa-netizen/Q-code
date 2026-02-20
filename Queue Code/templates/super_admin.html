@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Q-Code | Internal Master Admin</title>
+    <style>
+        :root {
+            --bg: #020617;
+            --card: #1e293b;
+            --cyan: #22d3ee;
+            --red: #f43f5e;
+            --text: #f8fafc;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 40px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 20px; margin-bottom: 30px; }
+        .card { 
+            background: var(--card); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            padding: 25px; 
+            border-radius: 16px; 
+            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: 0.3s;
+        }
+        .org-info strong { font-size: 1.2rem; display: block; margin-bottom: 5px; }
+        .org-info span { color: #94a3b8; font-size: 0.9rem; }
+        .actions { display: flex; gap: 10px; }
+        
+        button { padding: 12px 20px; border-radius: 8px; font-weight: 800; cursor: pointer; border: none; transition: 0.2s; }
+        
+        .btn-approve { background: var(--cyan); color: #020617; }
+        .btn-approve:hover { background: #67e8f9; transform: scale(1.05); }
+        
+        .btn-reject { background: transparent; color: var(--red); border: 1px solid var(--red); }
+        .btn-reject:hover { background: var(--red); color: white; }
+        
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Pending Approvals</h1>
+            <span>Found: {{ pending_orgs|length }}</span>
+        </div>
+
+        <div id="list">
+            {% for org in pending_orgs %}
+            <div class="card" id="org-{{ org.id }}">
+                <div class="org-info">
+                    <strong>{{ org.name }}</strong>
+                    <span>Email: {{ org.email }}</span><br>
+                    <span>Phone: {{ org.phone }}</span>
+                </div>
+                <div class="actions">
+                    <button class="btn-reject" onclick="handleAction('reject', '{{ org.id }}')">REJECT</button>
+                    <button class="btn-approve" onclick="handleAction('approve', '{{ org.id }}')">APPROVE & NOTIFY</button>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 50px; color: #64748b;">
+                <h2>All clear!</h2>
+                <p>No pending organizations to verify.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        async function handleAction(type, id) {
+            const card = document.getElementById(`org-${id}`);
+            const buttons = card.querySelectorAll('button');
+            
+            if (type === 'reject' && !confirm("Are you sure? This will delete the organization record permanently.")) return;
+
+            // Disable buttons during request
+            buttons.forEach(b => b.disabled = true);
+            
+            const endpoint = type === 'approve' ? `/api/admin/approve-org/${id}` : `/api/admin/reject-org/${id}`;
+            
+            try {
+                const response = await fetch(endpoint, { method: 'POST' });
+                if (response.ok) {
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                } else {
+                    alert(`Error during ${type} process.`);
+                    buttons.forEach(b => b.disabled = false);
+                }
+            } catch (err) {
+                alert("Network error.");
+                buttons.forEach(b => b.disabled = false);
+            }
+        }
+    </script>
+</body>
+</html>
