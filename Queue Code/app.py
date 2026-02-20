@@ -11,15 +11,20 @@ from dotenv import load_dotenv
 # 1. Load env before anything else
 load_dotenv()
 
-app = Flask(__name__)
+# --- FOLDER PATH CORRECTION ---
+# This ensures Flask finds your templates even inside "Queue Code"
+base_dir = os.path.dirname(os.path.abspath(__file__))
+template_dir = os.path.join(base_dir, 'templates')
+static_dir = os.path.join(base_dir, 'static')
+
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
 # --- CONFIGURATION ---
-# Use a strong secret key for session signing
 app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_default_key")
 app.permanent_session_lifetime = timedelta(days=1)
 
 # --- 2. INITIALIZE CLIENTS SAFELY ---
-# We use a global variable but initialize it lazily to prevent startup hangs
+# Lazy initialization prevents the "Port Scan Timeout" on Render
 supabase_client: Client = None
 
 def get_supabase():
@@ -28,29 +33,26 @@ def get_supabase():
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_KEY")
         if not url or not key:
-            print("CRITICAL: Supabase credentials missing from Environment Variables!")
+            print("CRITICAL: Supabase credentials missing!")
             return None
         try:
+            # We don't use 'supabase: Client =' here to avoid local scoping issues
             supabase_client = create_client(url, key)
         except Exception as e:
             print(f"FAILED TO CONNECT TO SUPABASE: {e}")
             return None
     return supabase_client
 
-# Initialize Groq (Lazy check)
 def get_groq():
     api_key = os.getenv("GROQ_API_KEY")
-    if api_key:
-        return Groq(api_key=api_key)
-    return None
+    return Groq(api_key=api_key) if api_key else None
 
 # Termii Config
 TERMII_API_KEY = os.getenv("TERMII_API_KEY")
 TERMII_SENDER_ID = os.getenv("TERMII_SENDER_ID", "N-Alert")
 
 def send_sms_via_termii(phone, message):
-    if not TERMII_API_KEY: 
-        return None
+    if not TERMII_API_KEY: return None
     url = "https://api.ng.termii.com/api/sms/send"
     payload = {
         "api_key": TERMII_API_KEY,
@@ -105,14 +107,13 @@ def super_admin_view():
     
     db = get_supabase()
     if not db:
-        return "Database Configuration Error. Please check Render Environment Variables.", 500
+        return "Database Error: Please check Render environment variables.", 500
 
     try:
         res = db.table("organizations").select("*").eq("verified", False).execute()
         return render_template('super_admin.html', pending_orgs=res.data)
     except Exception as e:
-        print(f"Admin Fetch Error: {e}")
-        return f"Database Error: {e}", 500
+        return f"Database Fetch Error: {e}", 500
 
 @app.route('/logout')
 def logout():
@@ -127,17 +128,12 @@ def login():
     email = data.get('email')
     password = data.get('password')
 
-    if not email or not password:
-        return jsonify({"status": "error", "message": "Missing credentials"}), 400
-
-    # A. MASTER ADMIN LOGIN (Direct ENV check)
     if email == os.getenv("ADMIN_EMAIL") and password == os.getenv("ADMIN_PASSWORD"):
         session.clear()
         session.permanent = True
         session['is_super_admin'] = True
         return jsonify({"status": "success", "redirect": "/super-admin"})
 
-    # B. ORGANIZATION LOGIN
     db = get_supabase()
     if not db:
         return jsonify({"status": "error", "message": "Database disconnected"}), 500
@@ -154,22 +150,17 @@ def login():
                     session['org_name'] = org['name']
                     session['is_super_admin'] = False
                     return jsonify({"status": "success", "redirect": "/admin"})
-                else:
-                    return jsonify({"status": "pending", "message": "Account awaiting verification"}), 403
-            return jsonify({"status": "error", "message": "Incorrect password"}), 401
+                return jsonify({"status": "pending", "message": "Account awaiting verification."}), 403
+            return jsonify({"status": "error", "message": "Incorrect password."}), 401
     except Exception as e:
-        print(f"Login DB Error: {e}")
-        return jsonify({"status": "error", "message": "Database query failed"}), 500
+        return jsonify({"status": "error", "message": "Database query failed."}), 500
     
-    return jsonify({"status": "error", "message": "User not found"}), 404
-
-# --- 5. REGISTER & ACTIONS ---
+    return jsonify({"status": "error", "message": "User not found."}), 404
 
 @app.route('/api/auth/register', methods=['POST'])
 def register_org():
     db = get_supabase()
-    if not db: 
-        return jsonify({"status": "error", "message": "Database offline"}), 500
+    if not db: return jsonify({"status": "error", "message": "Database offline"}), 500
     
     org_name = request.form.get('orgName')
     email = request.form.get('email')
@@ -183,18 +174,17 @@ def register_org():
             "password": password, "verified": False
         }).execute()
 
-        msg = Message(f"ACTION REQUIRED: New Org {org_name}", recipients=[app.config['MAIL_USERNAME']])
-        msg.body = f"Review Request:\nName: {org_name}\nEmail: {email}\nPhone: {phone}"
+        msg = Message(f"URGENT: New Org {org_name}", recipients=[app.config['MAIL_USERNAME']])
+        msg.body = f"Review Request:\nName: {org_name}\nEmail: {email}"
         if uploaded_file:
             msg.attach(uploaded_file.filename, uploaded_file.content_type, uploaded_file.read())
 
         mail.send(msg)
-        return jsonify({"status": "success", "message": "Application submitted successfully."})
+        return jsonify({"status": "success", "message": "Application submitted."})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # --- STARTUP ---
 if __name__ == '__main__':
-    # Render requires host 0.0.0.0 and a dynamic port
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
