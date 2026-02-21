@@ -2,260 +2,193 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q-Code Admin | {{ org_name }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Q-CODE | Live Status</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-dark: #020617;
-            --sidebar-bg: #0f172a;
-            --accent-cyan: #22d3ee;
-            --accent-blue: #0ea5e9;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --card-glass: rgba(30, 41, 59, 0.5);
-            --border: rgba(255, 255, 255, 0.1);
-            --danger: #ef4444;
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow-x: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.2s; }
+        
+        .status-ring {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 6px solid rgba(34, 211, 238, 0.1);
+            border-top-color: #22d3ee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            animation: spin 2s linear infinite;
         }
+        .ring-inner { animation: counter-spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes counter-spin { 100% { transform: rotate(-360deg); } }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
-
-        /* Sidebar */
-        aside { width: 280px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .side-header { padding: 30px 24px; font-size: 1.4rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
-        .logo-box { width: 35px; height: 35px; background: var(--accent-cyan); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--bg-dark); }
-        .org-display { color: var(--accent-cyan); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 2px; padding: 0 24px 20px; font-weight: 800; opacity: 0.8; }
-        
-        .nav-list { padding: 0 16px; flex: 1; }
-        .nav-item { padding: 14px 16px; border-radius: 12px; margin-bottom: 6px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-weight: 600; transition: 0.3s; }
-        .nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--accent-cyan); }
-        .nav-item.active { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: white; }
-
-        /* Content */
-        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        header { height: 80px; background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; }
-        
-        .view-section { flex: 1; overflow-y: auto; padding: 40px; display: none; }
-        .view-section.active { display: block; animation: fadeInUp 0.4s ease forwards; }
-
-        .card { background: var(--card-glass); border-radius: 24px; border: 1px solid var(--border); padding: 30px; margin-bottom: 24px; backdrop-filter: blur(10px); }
-        label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 0.75rem; color: var(--accent-cyan); text-transform: uppercase; }
-        input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(15, 23, 42, 0.6); color: white; margin-bottom: 15px; }
-        
-        .btn { padding: 12px 24px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.3s; }
-        .btn-cyan { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: var(--bg-dark); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
-
-        .chip { background: rgba(34, 211, 238, 0.1); padding: 8px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; margin: 4px; border: 1px solid rgba(34, 211, 238, 0.2); color: var(--accent-cyan); font-size: 0.8rem; }
-        .chip button { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
-        
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .page { display: none; animation: fadeIn 0.4s ease-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="bg-slate-950">
 
-    <aside>
-        <div class="side-header">
-            <div class="logo-box"><i data-lucide="zap"></i></div> Q-CODE
-        </div>
-        <div class="org-display">{{ org_name }}</div>
-
-        <nav class="nav-list">
-            <div class="nav-item active" onclick="switchTab('monitor', this)"><i data-lucide="monitor"></i> Monitor</div>
-            <div class="nav-item" onclick="switchTab('create', this)"><i data-lucide="plus-square"></i> Create Service</div>
-            <div class="nav-item" onclick="switchTab('services', this)"><i data-lucide="layout-grid"></i> My Services</div>
-            <div class="nav-item" onclick="switchTab('history', this)"><i data-lucide="bar-chart-3"></i> Intelligence</div>
-            <div class="nav-item" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</div>
-        </nav>
-    </aside>
-
-    <main>
-        <header>
-            <h2 id="page-title">Monitor</h2>
-            <div id="live-clock" style="font-family: monospace; color: var(--accent-cyan);">00:00:00</div>
-            <div style="text-align: right;">
-                <div style="font-size:0.85rem; font-weight:800;">Administrator</div>
-                <div style="font-size:0.7rem; color:var(--text-muted);">Active: {{ org_name }}</div>
+    <div class="max-w-[450px] mx-auto min-h-screen flex flex-col relative">
+        
+        <header class="p-5 flex justify-between items-center glass sticky top-0 z-50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 btn-cyan rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="zap" class="w-6 h-6 text-slate-900"></i>
+                </div>
+                <div>
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block leading-none">Q-CODE</span>
+                    <span id="user-display-name" class="text-sm font-extrabold text-white uppercase">User</span>
+                </div>
             </div>
+            <button onclick="handleLogout()" class="w-10 h-10 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-center text-rose-500">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
         </header>
 
-        <section id="monitor" class="view-section active">
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
-                <div class="card"><label>Pending Users</label><h2 id="count-wait">0</h2></div>
-                <div class="card" style="border: 1px solid var(--accent-cyan);"><label>Node Action</label><h2 style="color: var(--accent-cyan);">Ready</h2></div>
-                <div class="card"><label>Avg Wait</label><h2>--</h2></div>
-            </div>
-        </section>
-
-        <section id="create" class="view-section">
-            <div class="card">
-                <h3>New Service Node</h3>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-                    <div>
-                        <label>Service Name</label>
-                        <input type="text" id="inp-service-name" placeholder="e.g. Front Desk">
-                        <label>Est. Time (mins)</label>
-                        <input type="number" id="inp-est-time" value="10">
-                    </div>
-                    <div>
-                        <label>Add Staff Member</label>
-                        <div style="display:flex; gap:10px;">
-                            <input type="text" id="inp-staff-name" placeholder="Name">
-                            <button class="btn btn-outline" onclick="addStaff()">ADD</button>
-                        </div>
-                        <div id="staff-chips"></div>
+        <main class="flex-1 p-6 pb-32">
+            <section id="page-home" class="page active">
+                <div class="mb-10">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 block">New Check-in</label>
+                    <div class="glass p-2 rounded-3xl flex gap-2">
+                        <input type="text" id="joinInput" placeholder="SERVICE CODE" class="flex-1 bg-transparent px-4 font-bold text-white outline-none uppercase">
+                        <button onclick="handleJoin()" class="btn-cyan px-6 py-3 rounded-2xl font-black text-[10px] text-slate-900 uppercase">Join</button>
                     </div>
                 </div>
-                <button class="btn btn-cyan" style="width:100%; margin-top:20px;" onclick="publishService()">PUBLISH SERVICE</button>
-            </div>
-        </section>
 
-        <section id="services" class="view-section">
-            <div id="services-list"></div>
-        </section>
+                <div id="queue-container" class="space-y-12"></div>
+            </section>
+        </main>
 
-        <section id="history" class="view-section">
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h3 style="color: var(--accent-cyan);">Attendance Intelligence</h3>
-                        <p style="color: var(--text-muted); font-size: 0.85rem;">Daily record of completed service sessions.</p>
-                    </div>
-                    <button class="btn btn-outline" onclick="loadDailyReport()">
-                        <i data-lucide="refresh-cw" size="16"></i> Refresh
-                    </button>
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; color: var(--text-main);">
-                    <thead>
-                        <tr style="text-align: left; border-bottom: 1px solid var(--border); color: var(--accent-cyan); font-size: 0.75rem; text-transform: uppercase;">
-                            <th style="padding: 15px;">Visitor Name</th>
-                            <th style="padding: 15px;">Service Node</th>
-                            <th style="padding: 15px;">Entry Time</th>
-                            <th style="padding: 15px;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="report-table-body">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-    </main>
+        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-[400px] h-20 glass rounded-[2.5rem] flex justify-around items-center z-40 border-white/10 shadow-2xl">
+            <button onclick="nav('home')" class="text-cyan-400"><i data-lucide="home"></i></button>
+            <button onclick="location.reload()" class="text-slate-500"><i data-lucide="refresh-cw"></i></button>
+        </nav>
+    </div>
 
     <script>
         lucide.createIcons();
-        let staffList = [];
 
-        // Tab Switching Logic
-        function switchTab(tabId, element) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
-            element.classList.add('active');
-            document.getElementById('page-title').innerText = element.innerText;
+        // ================= SUPABASE CONFIG =================
+        const supabaseUrl = "YOUR_SUPABASE_URL";
+        const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-            if(tabId === 'services') loadServices();
-            if(tabId === 'history') loadDailyReport();
-        }
+        let userName = "";
 
-        // Clock logic
-        setInterval(() => {
-            document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
-        }, 1000);
-
-        // Staff Logic
-        function addStaff() {
-            const name = document.getElementById('inp-staff-name').value;
-            if(!name) return;
-            staffList.push(name);
-            renderStaff();
-            document.getElementById('inp-staff-name').value = '';
-        }
-
-        function removeStaff(index) {
-            staffList.splice(index, 1);
-            renderStaff();
-        }
-
-        function renderStaff() {
-            document.getElementById('staff-chips').innerHTML = staffList.map((s, idx) => `
-                <span class="chip">${s} <button onclick="removeStaff(${idx})">&times;</button></span>
-            `).join('');
-        }
-
-        // API: Create Service
-        async function publishService() {
-            const name = document.getElementById('inp-service-name').value;
-            if(!name) return alert("Please enter a service name");
-            
-            const res = await fetch('/api/services/create', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    name: name,
-                    avg_time: document.getElementById('inp-est-time').value,
-                    staff: staffList
-                })
-            });
-            const data = await res.json();
-            if(data.status === 'success') {
-                alert("Service Created!");
-                switchTab('services', document.querySelector('[onclick*="services"]'));
+        // ================= ON LOAD =================
+        window.onload = async function() {
+            userName = prompt("Enter your name");
+            if (!userName) {
+                alert("Name is required");
+                location.reload();
+                return;
             }
-        }
+            document.getElementById('user-display-name').innerText = userName;
+            await renderActiveQueues();
+        };
 
-        // API: Load My Services
-        async function loadServices() {
-            const res = await fetch('/api/services/list');
-            const data = await res.json();
-            const container = document.getElementById('services-list');
-            container.innerHTML = data.map(s => `
-                <div class="card" style="display:flex; justify-content:space-between;">
-                    <div>
-                        <h3>${s.name}</h3>
-                        <p>Code: <strong>${s.service_code}</strong> | End Code: ${s.end_code}</p>
-                    </div>
-                    <div class="chip">ACTIVE</div>
-                </div>
-            `).join('');
-        }
-
-        // API: Load Daily Attendance Report
-        async function loadDailyReport() {
-            const tbody = document.getElementById('report-table-body');
-            tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center;">Loading records...</td></tr>';
-
-            try {
-                const res = await fetch('/api/reports/daily');
-                const logs = await res.json();
-
-                if (logs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:var(--text-muted);">No attendance records for today.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = logs.map(log => `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem;">
-                        <td style="padding: 15px; font-weight: 600;">${log.visitor_name || 'Guest'}</td>
-                        <td style="padding: 15px;">${log.service_name}</td>
-                        <td style="padding: 15px; color: var(--text-muted);">${new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                        <td style="padding: 15px;">
-                            <span style="background: rgba(34, 211, 238, 0.1); color: var(--accent-cyan); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">
-                                COMPLETED
-                            </span>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:var(--danger);">Error loading report data.</td></tr>';
-            }
+        function nav(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
         }
 
         function handleLogout() {
-            window.location.href = "/logout-admin";
+            if(confirm("Are you sure you want to logout?")) {
+                window.location.href = "/login";
+            }
+        }
+
+        // ================= RENDER QUEUES =================
+        async function renderActiveQueues() {
+            const { data, error } = await supabase
+                .from("queues")
+                .select("*")
+                .eq("name", userName)
+                .order("created_at", { ascending: true });
+
+            if(error) {
+                console.error(error);
+                return;
+            }
+
+            const container = document.getElementById('queue-container');
+            container.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20 opacity-30">
+                        <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-4"></i>
+                        <p class="font-bold text-[10px] uppercase tracking-widest">No active lines</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            data.forEach((t, index) => {
+                container.innerHTML += `
+                <div class="text-center">
+                    <div class="status-ring mb-6">
+                        <div class="ring-inner">
+                            <span class="text-[10px] font-black text-slate-500 uppercase block">Position</span>
+                            <span class="text-6xl font-black italic text-white tracking-tighter">#${index + 1}</span>
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-black uppercase italic tracking-tight">${t.queue_name}</h2>
+                    <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">Live Updates Active</p>
+                    <button onclick="leaveQueue('${t.id}')" class="mt-6 text-rose-500 text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100">
+                        Cancel Spot
+                    </button>
+                </div>
+                <hr class="border-white/5 my-10">`;
+            });
+
+            lucide.createIcons();
+        }
+
+        // ================= JOIN QUEUE =================
+        async function handleJoin() {
+            const code = document.getElementById('joinInput').value.trim().toUpperCase();
+            if(!code) return;
+
+            const ticketNumber = 'TK-' + Math.random().toString(36).substr(2,5);
+
+            const { error } = await supabase
+                .from('queues')
+                .insert([{ name: userName, queue_name: code, ticket: ticketNumber }]);
+
+            if(error) {
+                alert("Failed to join queue");
+                console.error(error);
+                return;
+            }
+
+            document.getElementById('joinInput').value = '';
+            await renderActiveQueues();
+        }
+
+        // ================= LEAVE QUEUE =================
+        async function leaveQueue(id) {
+            const { error } = await supabase
+                .from('queues')
+                .delete()
+                .eq('id', id);
+
+            if(error) {
+                alert("Failed to leave queue");
+                console.error(error);
+                return;
+            }
+
+            await renderActiveQueues();
         }
     </script>
 </body>
