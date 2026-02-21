@@ -24,7 +24,7 @@
 </head>
 <body class="min-h-screen bg-[#0f172a]">
 
-    <div id="notifBox" class="fixed top-5 right-5 z-[200] max-w-sm w-full hidden">
+    <div id="notifBox" class="fixed top-5 right-5 z-[250] max-w-sm w-full hidden">
         <div class="glass p-4 rounded-2xl border-l-4 border-cyan-400 flex items-center gap-3 shadow-2xl">
             <i data-lucide="info" class="text-cyan-400 w-5 h-5"></i>
             <p id="notifMessage" class="text-xs font-bold text-slate-200"></p>
@@ -38,7 +38,7 @@
                 <i data-lucide="zap" class="w-3 h-3 text-white fill-current"></i>
             </div>
         </div>
-        <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider order-1">Business Portal</a>
+        <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider order-1">Create a Queue</a>
     </nav>
 
     <main class="relative pt-32 pb-12 px-4 flex flex-col items-center justify-center text-center min-h-screen">
@@ -65,7 +65,7 @@
             </h1>
             
             <button onclick="openModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase tracking-widest shadow-xl shadow-cyan-500/20 mb-12">
-                Join a Queue Fast
+                Join a Queue
             </button>
 
             <div class="glass p-6 rounded-3xl border-white/5 w-full max-w-sm">
@@ -86,7 +86,7 @@
                     <h3 class="text-xl font-black mb-1">Quick Join</h3>
                     <p class="text-slate-400 text-xs">No account needed. Just your name.</p>
                 </div>
-                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center font-bold" placeholder="SERVICE CODE">
+                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center font-bold uppercase" placeholder="SERVICE CODE (e.g. SERV-508640)">
                 <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center" placeholder="YOUR NAME">
                 <button onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Secure Spot</button>
             </div>
@@ -96,18 +96,15 @@
                     <h3 class="text-xl font-black mb-1">Welcome Back</h3>
                     <p class="text-slate-400 text-xs">Sign in to your vault.</p>
                 </div>
-                
                 <button onclick="handleGoogleLogin()" class="btn-google w-full py-3 rounded-xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider">
                     <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-4 h-4" alt="Google">
                     Continue with Google
                 </button>
-
                 <div class="flex items-center gap-4 text-slate-600 my-2">
                     <div class="h-px bg-white/5 flex-1"></div>
                     <span class="text-[9px] font-bold">OR</span>
                     <div class="h-px bg-white/5 flex-1"></div>
                 </div>
-
                 <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none" placeholder="Email Address">
                 <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none" placeholder="Password">
                 <button onclick="loginUser()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Sign In</button>
@@ -117,23 +114,14 @@
             <div id="registerSection" class="space-y-4 pt-4 hidden">
                 <div class="text-center mb-2">
                     <h3 class="text-xl font-black mb-1">Join the Elite</h3>
-                    <p class="text-slate-400 text-xs">One account for all Q-CODE locations.</p>
+                    <p class="text-slate-400 text-xs">One account for all locations.</p>
                 </div>
-
                 <button onclick="handleGoogleLogin()" class="btn-google w-full py-3 rounded-xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider">
                     <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-4 h-4" alt="Google">
                     Join with Google
                 </button>
-
-                <div class="flex items-center gap-4 text-slate-600 my-2">
-                    <div class="h-px bg-white/5 flex-1"></div>
-                    <span class="text-[9px] font-bold">OR</span>
-                    <div class="h-px bg-white/5 flex-1"></div>
-                </div>
-
                 <input type="email" id="regEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Email Address">
                 <input type="password" id="regPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Create Password">
-                <input type="password" id="regConfirm" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Confirm Password">
                 <button onclick="registerPersonalAccount()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Create Personal Vault</button>
                 <p class="text-center text-[10px] text-slate-500 uppercase font-bold">Already have one? <span onclick="toggleAuth('login')" class="text-cyan-400 cursor-pointer">Login</span></p>
             </div>
@@ -142,6 +130,15 @@
 
     <script>
         lucide.createIcons();
+
+        // 1. MEMORY: Check for active session on load
+        window.onload = () => {
+            const activeTicket = localStorage.getItem('active_ticket_id');
+            if (activeTicket) {
+                // Skip landing if user is already in a queue
+                window.location.href = '/status';
+            }
+        };
 
         function notify(msg) {
             const box = document.getElementById('notifBox');
@@ -167,25 +164,41 @@
             if(mode === 'register') document.getElementById('registerSection').classList.remove('hidden');
         }
 
-        // Logic for Google Redirect (Update URL to your backend route)
-        function handleGoogleLogin() {
-            window.location.href = "/api/auth/google";
-        }
-
+        // 2. UNIVERSAL CODE RECOGNITION LOGIC
         async function joinFrictionless() {
-            const service_code = document.getElementById('serviceCode').value;
-            const name = document.getElementById('visitorName').value;
+            const service_code = document.getElementById('serviceCode').value.trim().toUpperCase();
+            const name = document.getElementById('visitorName').value.trim();
+            
             if(!service_code || !name) return notify("Enter all details");
 
-            const res = await fetch('/api/auth/join-frictionless', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ service_code, name })
-            });
-            const data = await res.json();
-            if(data.status === 'success') window.location.href = '/status';
-            else notify(data.message);
+            try {
+                // This sends the code to the global database check
+                const res = await fetch('/api/auth/join-frictionless', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ service_code, name })
+                });
+                
+                const data = await res.json();
+                
+                if(data.status === 'success') {
+                    // Store details so the app "remembers" them
+                    localStorage.setItem('active_ticket_id', data.ticket_id);
+                    localStorage.setItem('visitor_name', name);
+                    localStorage.setItem('active_service_code', service_code);
+
+                    notify("Spot Secured!");
+                    // Redirect to the status page
+                    setTimeout(() => window.location.href = '/status', 800);
+                } else {
+                    notify("Code unrecognized. Check the Admin code.");
+                }
+            } catch (e) {
+                notify("Server connection lost.");
+            }
         }
+
+        function handleGoogleLogin() { window.location.href = "/api/auth/google"; }
 
         async function loginUser() {
             const email = document.getElementById('loginEmail').value;
@@ -205,9 +218,6 @@
         async function registerPersonalAccount() {
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPass').value;
-            const confirm = document.getElementById('regConfirm').value;
-
-            if(password !== confirm) return notify("Passwords mismatch");
             if(!email || !password) return notify("Fill all fields");
 
             const res = await fetch('/api/auth/user-register', {
@@ -215,7 +225,6 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ email, password })
             });
-            
             const data = await res.json();
             if(data.status === 'success') {
                 notify("Account Secured!");
