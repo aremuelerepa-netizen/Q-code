@@ -32,6 +32,11 @@ def login_page():
 def userpage():
     return render_template('Userpage.html')
 
+@app.route('/register')
+def register_page():
+    # Make sure you have a file named 'register.html' in your templates folder
+    return render_template('org reg page.html')
+
 # --- API: AUTH & PERSONAL ACCOUNTS ---
 
 @app.route('/api/auth/user-register', methods=['POST'])
@@ -172,5 +177,6 @@ def admin_login_alias():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
