@@ -3,77 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q-CODE | Smart Queueing</title>
+    <title>Q-CODE | Premium Queue Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .cyan-glow { box-shadow: 0 0 20px rgba(34, 211, 238, 0.3); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; }
+        .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-cyan:hover { box-shadow: 0 0 30px rgba(34, 211, 238, 0.4); transform: translateY(-2px); }
+        .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-link { position: relative; color: #94a3b8; transition: color 0.3s; }
+        .nav-link:hover { color: #22d3ee; }
+        .nav-link::after { content: ''; position: absolute; width: 0; height: 2px; bottom: -4px; left: 0; background: #22d3ee; transition: width 0.3s; }
+        .nav-link:hover::after { width: 100%; }
+        /* Smooth Animation */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.8s ease-out forwards; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-6">
+<body class="min-h-screen bg-[#0f172a]">
 
-    <div class="text-center space-y-6 max-w-2xl">
-        <div class="flex justify-center gap-3 items-center mb-4">
-            <div class="p-3 bg-cyan-500 rounded-2xl cyan-glow">
-                <i data-lucide="zap" class="text-white"></i>
-            </div>
-            <h1 class="text-4xl font-black tracking-tighter">Q-CODE</h1>
+    <nav class="fixed top-0 w-full z-50 px-6 py-5 flex items-center justify-between glass border-b border-white/5">
+        <div class="flex items-center gap-8">
+            <a href="/login" class="nav-link text-xs font-bold uppercase tracking-[0.2em]">Create a Queue</a>
         </div>
-        <h2 class="text-5xl md:text-6xl font-extrabold leading-tight">Skip the wait, <span class="text-cyan-400">Join from anywhere.</span></h2>
-        <p class="text-slate-400 text-lg">Scan a code or join via your email to secure your spot in line.</p>
         
-        <div class="flex flex-col md:flex-row gap-4 justify-center pt-8">
-            <button onclick="openModal('join')" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold rounded-2xl transition-all transform hover:scale-105">
-                Join a Queue
-            </button>
-            <button onclick="openModal('login')" class="px-8 py-4 glass hover:bg-slate-800 font-bold rounded-2xl transition-all">
-                I have a Login Code
-            </button>
+        <div class="flex items-center gap-3">
+            <span class="text-xl font-black tracking-tighter uppercase italic">Q-CODE</span>
+            <div class="w-8 h-8 btn-cyan rounded-lg flex items-center justify-center">
+                <i data-lucide="zap" class="w-4 h-4 text-white fill-current"></i>
+            </div>
         </div>
-    </div>
+    </nav>
 
-    <div id="authModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="glass w-full max-w-md rounded-3xl p-8 relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white">
+    <main class="relative pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center min-h-screen">
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-cyan-500/10 blur-[120px] rounded-full -z-10"></div>
+        
+        <div class="animate-fade">
+            <span class="px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-widest mb-8 inline-block">
+                The Future of Waiting
+            </span>
+            <h1 class="text-6xl md:text-8xl font-black tracking-tight mb-6">
+                Redefining the <br><span class="text-gradient">Queue Experience.</span>
+            </h1>
+            <p class="max-w-xl mx-auto text-slate-400 text-lg md:text-xl leading-relaxed mb-12">
+                Join queues digitally, track your spot in real-time, and get notified when it's your turn. No apps, no stress.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-5 justify-center">
+                <button onclick="openModal('join')" class="btn-cyan px-10 py-5 rounded-2xl text-slate-950 font-extrabold text-sm uppercase tracking-wider">
+                    Join a Queue
+                </button>
+                <button onclick="openModal('login')" class="glass hover:bg-white/5 px-10 py-5 rounded-2xl text-white font-bold text-sm uppercase tracking-wider transition-all">
+                    Login with Code
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <div id="authModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl hidden flex items-center justify-center p-6 z-[100]">
+        <div class="glass w-full max-w-[440px] rounded-[32px] p-10 relative border-white/10 shadow-2xl">
+            <button onclick="closeModal()" class="absolute top-6 right-6 text-slate-500 hover:text-white transition">
                 <i data-lucide="x"></i>
             </button>
 
-            <div id="emailSection" class="space-y-6">
-                <h3 class="text-2xl font-bold">Verify your Email</h3>
-                <p class="text-slate-400 text-sm">We'll send a code to verify you and generate your Login Code.</p>
-                <input type="email" id="userEmail" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl focus:border-cyan-500 outline-none" placeholder="Email Address">
-                <input type="tel" id="userPhone" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl focus:border-cyan-500 outline-none" placeholder="Phone (e.g. 23480...)">
-                <button onclick="requestOTP()" id="otpBtn" class="w-full py-4 bg-cyan-500 text-slate-900 font-bold rounded-xl">Send OTP</button>
-                <p class="text-center text-xs text-slate-500">New here? You'll get your Login Code after this.</p>
-            </div>
-
-            <div id="codeSection" class="hidden space-y-6">
-                <h3 class="text-2xl font-bold">Quick Login</h3>
-                <p class="text-slate-400 text-sm">Enter your 8-digit Q-CODE to access your dashboard.</p>
-                <input type="text" id="loginCodeInput" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl focus:border-cyan-500 outline-none text-center text-2xl font-mono tracking-widest" placeholder="QC-XXXX-XXXX">
-                <button onclick="loginWithCode()" class="w-full py-4 bg-cyan-500 text-slate-900 font-bold rounded-xl">Access Dashboard</button>
-                <button onclick="toggleMode('join')" class="w-full text-cyan-400 text-sm font-bold">Wait, I need to verify email</button>
-            </div>
-
-            <div id="verifySection" class="hidden space-y-6 text-center">
-                <h3 class="text-2xl font-bold">Enter OTP</h3>
-                <div class="flex justify-center gap-2">
-                    <input type="text" maxlength="6" id="otpValue" class="w-32 bg-slate-900 border border-slate-700 p-4 rounded-xl text-center text-2xl tracking-tighter" placeholder="000000">
+            <div id="emailSection" class="space-y-8">
+                <div class="text-center">
+                    <h3 class="text-2xl font-black mb-2">Verification</h3>
+                    <p class="text-slate-400 text-sm">Verify your email to get your unique login code.</p>
                 </div>
-                <button onclick="verifyOTP()" class="w-full py-4 bg-green-500 text-white font-bold rounded-xl">Verify & Generate Code</button>
+                <div class="space-y-4">
+                    <div class="group">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Official Email</label>
+                        <input type="email" id="userEmail" class="w-full bg-slate-900/50 border border-white/5 p-4 rounded-2xl focus:border-cyan-400 focus:bg-slate-900 outline-none transition-all" placeholder="name@email.com">
+                    </div>
+                    <button onclick="requestOTP()" id="otpBtn" class="w-full py-5 btn-cyan text-slate-950 font-black rounded-2xl uppercase tracking-widest text-xs">
+                        Send Verification Code
+                    </button>
+                </div>
             </div>
 
-            <div id="successSection" class="hidden space-y-6 text-center">
-                <div class="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto">
-                    <i data-lucide="check" class="w-10 h-10"></i>
+            <div id="codeSection" class="hidden space-y-8">
+                <div class="text-center">
+                    <h3 class="text-2xl font-black mb-2">Welcome Back</h3>
+                    <p class="text-slate-400 text-sm">Enter your private Q-CODE to enter.</p>
                 </div>
-                <h3 class="text-2xl font-bold">Verification Successful!</h3>
-                <p class="text-slate-400">Save this code! Use it to log in next time without email.</p>
-                <div id="finalLoginCode" class="p-4 bg-slate-900 border-2 border-dashed border-cyan-500 rounded-xl text-2xl font-mono font-bold text-cyan-400">---</div>
-                <button onclick="window.location.href='/status'" class="w-full py-4 bg-cyan-500 text-slate-900 font-bold rounded-xl">Go to My Queue</button>
+                <div class="space-y-4">
+                    <input type="text" id="loginCodeInput" class="w-full bg-slate-900/50 border border-white/5 p-5 rounded-2xl focus:border-cyan-400 outline-none text-center text-2xl font-mono tracking-[0.3em] uppercase" placeholder="QC-XXXX">
+                    <button onclick="loginWithCode()" class="w-full py-5 btn-cyan text-slate-950 font-black rounded-2xl uppercase tracking-widest text-xs">
+                        Enter Dashboard
+                    </button>
+                    <button onclick="toggleMode('join')" class="w-full text-slate-500 text-xs font-bold hover:text-cyan-400 transition">Need to verify email instead?</button>
+                </div>
+            </div>
+
+            <div id="verifySection" class="hidden space-y-8 text-center">
+                <div class="text-center">
+                    <h3 class="text-2xl font-black mb-2">Check Email</h3>
+                    <p class="text-slate-400 text-sm">We sent a 6-digit code to your inbox.</p>
+                </div>
+                <input type="text" maxlength="6" id="otpValue" class="w-full bg-slate-900/50 border border-white/5 p-5 rounded-2xl text-center text-4xl font-black tracking-[0.5em]" placeholder="000000">
+                <button onclick="verifyOTP()" class="w-full py-5 btn-cyan text-slate-950 font-black rounded-2xl uppercase tracking-widest text-xs">Complete Verification</button>
+            </div>
+
+            <div id="successSection" class="hidden space-y-8 text-center animate-fade">
+                <div class="w-20 h-20 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto border border-cyan-400/20">
+                    <i data-lucide="shield-check" class="w-10 h-10"></i>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-black mb-2">Account Secured</h3>
+                    <p class="text-slate-400 text-sm">Use this code to login instantly next time.</p>
+                </div>
+                <div id="finalLoginCode" class="p-6 bg-slate-900 border border-cyan-500/30 rounded-2xl text-3xl font-mono font-black text-cyan-400 tracking-wider">---</div>
+                <button onclick="window.location.href='/status'" class="w-full py-5 btn-cyan text-slate-950 font-black rounded-2xl uppercase tracking-widest text-xs">Access Queue Status</button>
             </div>
         </div>
     </div>
@@ -86,9 +129,7 @@
             toggleMode(mode);
         }
 
-        function closeModal() {
-            document.getElementById('authModal').classList.add('hidden');
-        }
+        function closeModal() { document.getElementById('authModal').classList.add('hidden'); }
 
         function toggleMode(mode) {
             document.getElementById('emailSection').classList.toggle('hidden', mode === 'login');
@@ -99,28 +140,42 @@
 
         async function requestOTP() {
             const email = document.getElementById('userEmail').value;
-            if(!email) return alert("Enter email!");
+            if(!email) return alert("Please enter your email.");
             
-            document.getElementById('otpBtn').innerText = "Sending...";
-            const res = await fetch('/api/auth/request-email-otp', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email })
-            });
-            if(res.ok) {
-                document.getElementById('emailSection').classList.add('hidden');
-                document.getElementById('verifySection').classList.remove('hidden');
+            const btn = document.getElementById('otpBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "VERIFYING...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/request-email-otp', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if(res.ok) {
+                    document.getElementById('emailSection').classList.add('hidden');
+                    document.getElementById('verifySection').classList.remove('hidden');
+                } else {
+                    alert("Error: " + data.message);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert("Connection failed. Check your server.");
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
         }
 
         async function verifyOTP() {
             const otp = document.getElementById('otpValue').value;
-            const phone = document.getElementById('userPhone').value;
-            
             const res = await fetch('/api/auth/verify-email-otp', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ otp, phone })
+                body: JSON.stringify({ otp })
             });
             const data = await res.json();
             if(data.status === 'success') {
@@ -128,7 +183,7 @@
                 document.getElementById('successSection').classList.remove('hidden');
                 document.getElementById('finalLoginCode').innerText = data.login_code;
             } else {
-                alert("Invalid OTP");
+                alert("Invalid code. Please try again.");
             }
         }
 
@@ -139,11 +194,8 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ login_code: code })
             });
-            if(res.ok) {
-                window.location.href = '/status';
-            } else {
-                alert("Invalid or expired Login Code.");
-            }
+            if(res.ok) { window.location.href = '/status'; } 
+            else { alert("Invalid Q-CODE."); }
         }
     </script>
 </body>
