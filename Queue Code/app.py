@@ -1,170 +1,90 @@
 import os
 import random
 import string
-import requests
-from datetime import timedelta
+import smtplib
+from email.message import EmailMessage
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from supabase import create_client, Client
-from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, 
-            template_folder=os.path.join(base_dir, 'templates'),
-            static_folder=os.path.join(base_dir, 'static'))
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_secure")
 
-app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_secure_v2")
-app.permanent_session_lifetime = timedelta(days=7)
-
-# --- 1. INITIALIZE CLIENTS ---
+# --- 1. INITIALIZE DB ---
 db: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# --- 2. HELPER FUNCTIONS ---
-def generate_unique_code():
-    return 'QC-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+# --- 2. EMAIL OTP FUNCTION ---
+def send_otp_email(to_email, otp):
+    """Sends OTP using Gmail App Password via Port 465"""
+    gmail_user = os.getenv("GMAIL_USER")
+    gmail_pass = os.getenv("GMAIL_APP_PASSWORD") # 16-character code
+    
+    msg = EmailMessage()
+    msg.set_content(f"Your Q-CODE verification code is: {otp}")
+    msg["Subject"] = "Verify Your Email"
+    msg["From"] = f"Q-CODE <{gmail_user}>"
+    msg["To"] = to_email
 
-def send_api_email(to_email, subject, body_html):
-    """Bypasses Render's SMTP block using Resend API"""
-    api_key = os.getenv("RESEND_API_KEY")
     try:
-        res = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={
-                "from": "Q-CODE <onboarding@resend.dev>",
-                "to": [to_email],
-                "subject": subject,
-                "html": body_html
-            }
-        )
-        return res.status_code in [200, 201]
-    except:
+        # Port 465 is for SSL; if Render blocks this, we'll use an API instead
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(gmail_user, gmail_pass)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"EMAIL ERROR: {e}")
         return False
 
-# --- 3. PAGE ROUTES ---
-@app.route('/')
-def home(): return render_template('index.html')
+# --- 3. ONLINE USER FLOW (EMAIL) ---
 
-@app.route('/login')
-def login_view(): return render_template('login page.html')
-
-@app.route('/register')
-def reg_view(): return render_template('org reg page.html')
-
-@app.route('/super-admin')
-def super_admin_view():
-    if not session.get('is_super_admin'): return redirect(url_for('login_view'))
-    res = db.table("organizations").select("*").eq("verified", False).execute()
-    return render_template('super_admin.html', pending_orgs=res.data)
-
-@app.route('/admin')
-def admin_dashboard():
-    if 'org_id' not in session: return redirect(url_for('login_view'))
-    return render_template('Admin page.html')
-
-# --- 4. ORG REGISTRATION & LOGIN ---
-
-@app.route('/api/auth/register', methods=['POST'])
-def register_org():
-    # Handle Form Data (Multipart for file support)
-    name = request.form.get('orgName')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
-    password = request.form.get('password')
-    
-    try:
-        # Save to DB
-        db.table("organizations").insert({
-            "name": name, "email": email, "phone": phone, 
-            "password": password, "verified": False
-        }).execute()
-        
-        # Notify Super Admin via Email
-        send_api_email(
-            os.getenv("ADMIN_EMAIL"), 
-            "New Org Application", 
-            f"Organization <b>{name}</b> has registered and is waiting for your approval."
-        )
-        return jsonify({"status": "success", "message": "Application submitted!"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    data = request.json or {}
-    email, password = data.get('email'), data.get('password')
-
-    # Check Super Admin
-    if email == os.getenv("ADMIN_EMAIL") and password == os.getenv("ADMIN_PASSWORD"):
-        session.clear()
-        session['is_super_admin'] = True
-        return jsonify({"status": "success", "redirect": "/super-admin"})
-
-    # Check Regular Org
-    res = db.table("organizations").select("*").eq("email", email).execute()
-    if res.data and res.data[0]['password'] == password:
-        org = res.data[0]
-        if org['verified']:
-            session.update({'org_id': str(org['id']), 'org_name': org['name'], 'is_super_admin': False})
-            return jsonify({"status": "success", "redirect": "/admin"})
-        return jsonify({"status": "pending", "message": "Awaiting verification"}), 403
-    
-    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
-
-# --- 5. USER AUTH (EMAIL OTP & LOGIN CODE) ---
-
-@app.route('/api/auth/request-email-otp', methods=['POST'])
-def request_email_otp():
+@app.route('/api/auth/request-otp', methods=['POST'])
+def request_otp():
     email = request.json.get('email')
     otp = str(random.randint(100000, 999999))
     session['temp_otp'], session['temp_email'] = otp, email
     
-    success = send_api_email(
-        email, 
-        "Q-CODE Verification", 
-        f"Your verification code is: <b style='font-size:24px;'>{otp}</b>"
-    )
-    
-    if success: return jsonify({"status": "sent"})
-    return jsonify({"status": "error", "message": "Email delivery failed"}), 500
+    if send_otp_email(email, otp):
+        return jsonify({"status": "sent"})
+    return jsonify({"status": "error", "message": "Email blocked by server. Check Render settings."}), 500
 
-@app.route('/api/auth/verify-email-otp', methods=['POST'])
-def verify_email_otp():
+@app.route('/api/auth/verify-otp', methods=['POST'])
+def verify_otp():
     user_otp = request.json.get('otp')
     if user_otp == session.get('temp_otp'):
-        email = session.get('temp_email')
-        login_code = generate_unique_code()
-        
-        db.table("queue").upsert({
-            "email": email, "login_code": login_code, "visitor_name": email.split('@')[0]
-        }, on_conflict="email").execute()
-        
+        # On success, generate the permanent login code
+        login_code = 'QC-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        db.table("queue").upsert({"email": session['temp_email'], "login_code": login_code}, on_conflict="email").execute()
         return jsonify({"status": "success", "login_code": login_code})
     return jsonify({"status": "invalid"}), 401
 
-@app.route('/api/auth/login-with-code', methods=['POST'])
-def login_with_code():
-    code = request.json.get('login_code', '').strip().upper()
-    res = db.table("queue").select("*").eq("login_code", code).execute()
-    if res.data:
-        session['user_email'] = res.data[0]['email']
-        return jsonify({"status": "success", "user": res.data[0]})
-    return jsonify({"status": "error", "message": "Invalid Code"}), 401
+# --- 4. OFFLINE USER FLOW (SMS WEBHOOK) ---
 
-# --- 6. ADMIN ACTIONS ---
+@app.route('/api/sms/incoming', methods=['POST'])
+def incoming_sms():
+    """Triggered when an offline user texts a service code to your phone number"""
+    data = request.json
+    sender_phone = data.get('from') # The user's phone number
+    service_code = data.get('message', '').strip().upper() # e.g. "ZENITH01"
 
-@app.route('/api/admin/approve-org/<org_id>', methods=['POST'])
-def approve_org(org_id):
-    if not session.get('is_super_admin'): return jsonify({"status": "unauthorized"}), 403
+    # Check if the code belongs to a valid registered company
+    res = db.table("organizations").select("name", "id").eq("id", service_code).execute()
     
-    res = db.table("organizations").update({"verified": True}).eq("id", org_id).execute()
     if res.data:
         org = res.data[0]
-        send_api_email(org['email'], "Account Approved!", f"Hello {org['name']}, your account is now active.")
-    return jsonify({"status": "success"})
+        # Add them to the queue automatically
+        db.table("queue").insert({
+            "phone": sender_phone, 
+            "org_id": org['id'], 
+            "entry_type": "SMS_OFFLINE"
+        }).execute()
+        reply = f"Q-CODE: You are now in line for {org['name']}. We will text you when it's your turn."
+    else:
+        reply = "Q-CODE: Invalid Service Code. Please check the code and try again."
+
+    # Return the reply to the SMS Gateway app to send back to the user
+    return jsonify({"to": sender_phone, "message": reply})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
