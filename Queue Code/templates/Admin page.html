@@ -243,12 +243,23 @@
             font-size: 1rem;
         }
 
+        /* Modal Styling */
+        #verifyModal, #notificationModal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(20px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -267,14 +278,10 @@
         <div class="org-display" id="sidebar-org-name">Organization Name</div>
 
         <nav class="nav-list">
-            <div class="nav-item active" onclick="switchTab('monitor', this)"><i data-lucide="monitor"></i> Monitor
-            </div>
-            <div class="nav-item" onclick="switchTab('create', this)"><i data-lucide="plus-square"></i> Create Service
-            </div>
-            <div class="nav-item" onclick="switchTab('services', this)"><i data-lucide="layout-grid"></i> My Services
-            </div>
-            <div class="nav-item" onclick="switchTab('history', this)"><i data-lucide="bar-chart-3"></i> Intelligence
-            </div>
+            <div class="nav-item active" onclick="switchTab('monitor', this)"><i data-lucide="monitor"></i> Monitor</div>
+            <div class="nav-item" onclick="switchTab('create', this)"><i data-lucide="plus-square"></i> Create Service</div>
+            <div class="nav-item" onclick="switchTab('services', this)"><i data-lucide="layout-grid"></i> My Services</div>
+            <div class="nav-item" onclick="switchTab('history', this)"><i data-lucide="bar-chart-3"></i> Intelligence</div>
             <div class="nav-item" onclick="switchTab('deleted', this)"><i data-lucide="archive"></i> Restore</div>
         </nav>
 
@@ -292,8 +299,7 @@
                 <h2 id="page-title" style="font-weight: 800;">Monitor</h2>
                 <span style="background: rgba(34, 211, 238, 0.1); color: var(--accent-cyan); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;" id="header-org-badge">...</span>
             </div>
-            <div id="live-clock" style="font-family: monospace; color: var(--accent-cyan); font-weight: bold;">00:00:00
-            </div>
+            <div id="live-clock" style="font-family: monospace; color: var(--accent-cyan); font-weight: bold;">00:00:00</div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <div style="text-align: right;">
                     <div style="font-size:0.85rem; font-weight:800;" id="admin-user-name">Admin User</div>
@@ -304,6 +310,20 @@
                 </div>
             </div>
         </header>
+
+        <section id="monitor" class="view-section active">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+                <div class="card"><label>Queue Size</label>
+                    <h2 id="count-wait" style="font-size: 3rem;">0</h2>
+                </div>
+                <div class="card" style="border: 1px solid var(--accent-cyan); cursor: pointer;" onclick="startServing(123)"><label>Active Node</label>
+                    <h2 style="font-size: 3rem; color: var(--accent-cyan);">Serve Next</h2>
+                </div>
+                <div class="card"><label>System Load</label>
+                    <h2 style="font-size: 3rem;">Optimal</h2>
+                </div>
+            </div>
+        </section>
 
         <section id="create" class="view-section">
             <div class="card" style="max-width: 900px; margin: 0 auto;">
@@ -359,27 +379,70 @@
             </div>
         </section>
 
-        <section id="monitor" class="view-section active">
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
-                <div class="card"><label>Queue Size</label>
-                    <h2 id="count-wait" style="font-size: 3rem;">0</h2>
-                </div>
-                <div class="card" style="border: 1px solid var(--accent-cyan);"><label>Active Node</label>
-                    <h2 style="font-size: 3rem; color: var(--accent-cyan);">Ready</h2>
-                </div>
-                <div class="card"><label>System Load</label>
-                    <h2 style="font-size: 3rem;">Optimal</h2>
-                </div>
-            </div>
-        </section>
-
         <section id="services" class="view-section"></section>
         <section id="history" class="view-section"></section>
         <section id="deleted" class="view-section"></section>
     </main>
 
+    <div id="verifyModal">
+        <div class="card" style="width: 400px; text-align: center;">
+            <h3 style="color: var(--accent-cyan); margin-bottom: 10px;">Verify Arrival</h3>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 20px;">Enter End Code to confirm attendance.</p>
+            <div id="timerDisplay" style="font-size: 2rem; font-weight: 800; margin-bottom: 20px; color: var(--danger);">05:00</div>
+            <input type="text" id="endCodeInput" placeholder="Enter End Code" style="text-align: center; margin-bottom: 20px;">
+            <button class="btn btn-cyan" style="width: 100%;" onclick="verifyEndCode()">CONFIRM CUSTOMER</button>
+        </div>
+    </div>
+
+    <div id="notificationModal">
+        <div class="card" style="width: 400px; text-align: center;">
+            <h3 id="modalTitle" style="color: var(--accent-cyan); margin-bottom: 10px;">Notification</h3>
+            <p id="modalMessage" style="color: var(--text-muted); margin-bottom: 20px;"></p>
+            <div id="modalActions" style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-cyan" id="modalConfirmBtn" onclick="closeNotification()">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
+
+        // MODAL NOTIFICATION SYSTEM
+        function showNotification(title, message, isConfirm = false, onConfirm = null) {
+            const modal = document.getElementById('notificationModal');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            const actions = document.getElementById('modalActions');
+            
+            actions.innerHTML = '';
+            
+            if (isConfirm) {
+                const yesBtn = document.createElement('button');
+                yesBtn.className = 'btn btn-cyan';
+                yesBtn.innerText = 'Confirm';
+                yesBtn.onclick = () => { onConfirm(); closeNotification(); };
+                
+                const noBtn = document.createElement('button');
+                noBtn.className = 'btn btn-outline';
+                noBtn.innerText = 'Cancel';
+                noBtn.onclick = closeNotification;
+                
+                actions.appendChild(noBtn);
+                actions.appendChild(yesBtn);
+            } else {
+                const okBtn = document.createElement('button');
+                okBtn.className = 'btn btn-cyan';
+                okBtn.innerText = 'OK';
+                okBtn.onclick = closeNotification;
+                actions.appendChild(okBtn);
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeNotification() {
+            document.getElementById('notificationModal').style.display = 'none';
+        }
 
         // ORGANIZATION & AUTH LOGIC
         function loadOrganizationProfile() {
@@ -391,10 +454,13 @@
         }
 
         function handleLogout() {
-            if (confirm("Are you sure you want to end your session?")) {
+            showNotification("End Session", "Are you sure you want to return to the Admin Login page?", true, () => {
                 localStorage.removeItem('qc_logged_in');
-                location.reload();
-            }
+                localStorage.removeItem('qc_org_name');
+                localStorage.removeItem('qc_admin_user');
+                // Force redirect to the admin login view route
+                window.location.href = "/login"; 
+            });
         }
 
         // FORM LOGIC
@@ -427,25 +493,18 @@
             renderChips(type === 'staff' ? 'staff-chips' : 'info-chips', type === 'staff' ? currentStaff : currentInfoFields, type);
         }
 
-        // --- NEW LOGIC: SWITCHING TABS & LOADING SERVICES ---
         function switchTab(id, el) {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.getElementById('page-title').innerText = el.innerText;
-
-            // If user clicks "My Services", load them from the server
-            if (id === 'services') {
-                loadMyServices();
-            }
+            if (id === 'services') loadMyServices();
         }
 
-        // --- NEW LOGIC: PUBLISH TO SERVER ---
         async function publishService() {
             const name = document.getElementById('inp-service-name').value;
-            if (!name) return alert("Service Name is required!");
-
+            if (!name) return showNotification("Required", "Service Name is required!");
             const serviceData = {
                 name: name,
                 start_time: document.getElementById('inp-start-time').value,
@@ -454,7 +513,6 @@
                 staff: currentStaff,
                 fields: currentInfoFields
             };
-
             try {
                 const res = await fetch('/api/services/create', {
                     method: 'POST',
@@ -462,38 +520,26 @@
                     body: JSON.stringify(serviceData)
                 });
                 const result = await res.json();
-                
                 if (result.status === 'success') {
-                    alert("Service Node initialized and live!");
-                    // Clear form
+                    showNotification("Success", "Service Node initialized and live!");
                     document.getElementById('inp-service-name').value = '';
                     currentStaff = [];
                     renderChips('staff-chips', [], 'staff');
-                    // Move to services tab
-                    const servicesNavItem = document.querySelector('[onclick*="services"]');
-                    switchTab('services', servicesNavItem);
-                } else {
-                    alert("Error: " + result.message);
-                }
-            } catch (err) {
-                alert("Server Connection Failed");
-            }
+                    switchTab('services', document.querySelector('[onclick*="services"]'));
+                } else { showNotification("Error", result.message); }
+            } catch (err) { showNotification("Error", "Server Connection Failed"); }
         }
 
-        // --- NEW LOGIC: FETCH FROM SERVER ---
         async function loadMyServices() {
             const container = document.getElementById('services');
             container.innerHTML = '<div class="card">Syncing nodes...</div>';
-
             try {
                 const res = await fetch('/api/services/list');
                 const services = await res.json();
-
                 if (services.length === 0) {
                     container.innerHTML = '<div class="card">No active service nodes found.</div>';
                     return;
                 }
-
                 container.innerHTML = services.map(s => `
                     <div class="card" style="display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--accent-cyan);">
                         <div>
@@ -507,21 +553,13 @@
                         <div class="chip" style="background: rgba(34, 211, 238, 0.1)">ACTIVE</div>
                     </div>
                 `).join('');
-                
-                // Refresh icons for new cards
                 lucide.createIcons();
-            } catch (err) {
-                container.innerHTML = '<div class="card" style="color: var(--danger)">Failed to load services.</div>';
-            }
+            } catch (err) { container.innerHTML = '<div class="card" style="color: var(--danger)">Failed to load services.</div>'; }
         }
 
-        // Init
-        loadOrganizationProfile();
-        renderChips('info-chips', currentInfoFields, 'info');
-        setInterval(() => {
-            document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
-        }, 1000);
-    </script>
-</body>
+        // TIMEOUT & SERVING LOGIC
+        let countdownTimer;
 
-</html>
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
