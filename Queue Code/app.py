@@ -302,8 +302,38 @@ def verify_completion():
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "Invalid Code"}), 400
 
+@app.route('/api/queue/join', methods=['POST'])
+def join_queue():
+    data = request.json
+    code = data.get('service_code', '').strip().toUpperCase()
+    visitor = data.get('visitor_name', 'Guest')
+
+    # 1. Find the service that matches this code
+    service_query = supabase.table('services')\
+        .select('*')\
+        .eq('service_code', code)\
+        .execute()
+
+    if not service_query.data:
+        return jsonify({"status": "error", "message": "Service code not found"}), 404
+
+    service = service_query.data[0]
+
+    # 2. Add the user to the queue table
+    new_entry = {
+        "service_id": service['id'],
+        "org_id": service['org_id'],
+        "visitor_name": visitor,
+        "status": "waiting"
+    }
+    
+    supabase.table('queue').insert(new_entry).execute()
+
+    return jsonify({"status": "success", "message": "Joined!"})
+            
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
