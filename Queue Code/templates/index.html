@@ -8,89 +8,83 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; width: 100%; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; }
         .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade { animation: fadeIn 0.8s ease-out forwards; }
-        html, body { position: relative; overflow-x: hidden; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen bg-[#0f172a]">
 
-    <div id="notifyModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden p-4">
-        <div class="glass p-6 rounded-[24px] w-full max-w-xs text-center border-white/10">
-            <div id="notifyIcon" class="mb-4 flex justify-center text-cyan-400"></div>
-            <h3 id="notifyTitle" class="text-lg font-bold mb-2">Notification</h3>
-            <p id="notifyMsg" class="text-slate-400 text-xs mb-6 px-2"></p>
-            <button onclick="closeNotify()" class="w-full py-3 btn-cyan text-slate-950 font-bold rounded-xl uppercase text-[10px] tracking-widest">Acknowledge</button>
-        </div>
-    </div>
-
     <nav class="fixed top-0 w-full z-50 px-4 py-4 flex items-center justify-between glass border-b border-white/5">
-        <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider">Business Portal</a>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 order-2">
             <span class="text-lg font-black tracking-tighter uppercase italic">Q-CODE</span>
             <div class="w-6 h-6 btn-cyan rounded-md flex items-center justify-center">
                 <i data-lucide="zap" class="w-3 h-3 text-white fill-current"></i>
             </div>
         </div>
+        <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider order-1">Business Portal</a>
     </nav>
 
-    <main class="relative pt-24 pb-12 px-4 flex flex-col items-center justify-center text-center min-h-screen">
+    <main class="relative pt-32 pb-12 px-4 flex flex-col items-center justify-center text-center min-h-screen">
         <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-cyan-500/10 blur-[80px] rounded-full -z-10"></div>
         
         <div class="animate-fade flex flex-col items-center w-full max-w-md">
-            <span class="px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest mb-6 inline-block">Frictionless Waiting</span>
-            <h1 class="text-4xl md:text-8xl font-black tracking-tight mb-4 leading-[1.1]">
-                Redefining the <br><span class="text-gradient">Queue Experience.</span>
+            <span class="px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest mb-6 inline-block">Frictionless Flow</span>
+            <h1 class="text-5xl md:text-7xl font-black tracking-tight mb-4 leading-[1.1]">
+                Wait Less, <br><span class="text-gradient">Live More.</span>
             </h1>
-            <p class="text-slate-400 text-sm md:text-xl leading-relaxed mb-10 px-2">
-                No passwords. Just join, track, and be served.
-            </p>
-            <button onclick="openModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase tracking-widest">
-                Join a Queue
+            
+            <button onclick="openModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase tracking-widest shadow-xl shadow-cyan-500/20 mb-12">
+                Join a Queue Fast
             </button>
-            <button onclick="openModal('login')" class="mt-4 text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
-                Enter with Q-CODE
-            </button>
+
+            <div class="glass p-6 rounded-3xl border-white/5 w-full max-w-sm">
+                <p class="text-slate-400 text-xs mb-4">Want to save your history and get AI alerts?</p>
+                <button onclick="openModal('login')" class="text-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] border border-cyan-400/30 px-6 py-2 rounded-full hover:bg-cyan-400/10 transition-all">
+                    Use Personal Account
+                </button>
+            </div>
         </div>
     </main>
 
     <div id="authModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4 z-[100]">
-        <div class="glass w-full max-w-[380px] rounded-[28px] p-8 relative border-white/10 shadow-2xl">
+        <div class="glass w-full max-w-[380px] rounded-[28px] p-8 relative border-white/10">
             <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
 
-            <div id="quickJoinSection" class="space-y-6 pt-4">
+            <div id="quickJoinSection" class="space-y-6 pt-4 hidden">
                 <div class="text-center">
-                    <h3 class="text-xl font-black mb-1">Join Queue</h3>
-                    <p class="text-slate-400 text-xs">Enter details to secure your spot.</p>
+                    <h3 class="text-xl font-black mb-1">Quick Join</h3>
+                    <p class="text-slate-400 text-xs">No account needed. Just your name.</p>
                 </div>
-                <div class="space-y-3">
-                    <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm text-center font-bold" placeholder="SERVICE CODE (e.g. 101)">
-                    <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm text-center" placeholder="YOUR NAME (OPTIONAL)">
-                    <button onclick="joinFrictionless()" id="joinBtn" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Secure Spot</button>
-                </div>
+                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center font-bold" placeholder="SERVICE CODE">
+                <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center" placeholder="YOUR NAME">
+                <button onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Secure Spot</button>
             </div>
 
-            <div id="codeSection" class="hidden space-y-6 pt-4">
+            <div id="loginSection" class="space-y-6 pt-4 hidden">
                 <div class="text-center">
                     <h3 class="text-xl font-black mb-1">Welcome Back</h3>
-                    <p class="text-slate-400 text-xs">Enter your private Q-CODE.</p>
+                    <p class="text-slate-400 text-xs">Sign in to your vault.</p>
                 </div>
-                <div class="space-y-3">
-                    <input type="text" id="loginCodeInput" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center text-xl font-mono uppercase" placeholder="QC-XXXX">
-                    <button onclick="loginWithCode()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Enter Dashboard</button>
-                </div>
+                <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none" placeholder="Email Address">
+                <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none" placeholder="Password">
+                <button class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Sign In</button>
+                <p class="text-center text-[10px] text-slate-500 uppercase font-bold">New here? <span onclick="toggleAuth('register')" class="text-cyan-400 cursor-pointer">Create Account</span></p>
             </div>
 
-            <div id="successSection" class="hidden space-y-6 text-center pt-4 animate-fade">
-                <div class="w-16 h-16 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto border border-cyan-400/20"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
-                <h3 class="text-xl font-black">You're in line!</h3>
-                <p class="text-slate-400 text-[10px] uppercase tracking-widest">Your Tracking Q-CODE:</p>
-                <div id="finalLoginCode" class="p-4 bg-slate-900 border border-cyan-500/30 rounded-xl text-2xl font-mono font-black text-cyan-400 italic">QC-XXXX</div>
-                <button onclick="window.location.href='/status'" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">View Status</button>
+            <div id="registerSection" class="space-y-4 pt-4 hidden">
+                <div class="text-center mb-2">
+                    <h3 class="text-xl font-black mb-1">Join the Elite</h3>
+                    <p class="text-slate-400 text-xs">One account for all Q-CODE locations.</p>
+                </div>
+                <input type="email" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Email Address">
+                <input type="password" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Create Password">
+                <input type="password" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Confirm Password">
+                <button class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Create Personal Vault</button>
+                <p class="text-center text-[10px] text-slate-500 uppercase font-bold">Already have one? <span onclick="toggleAuth('login')" class="text-cyan-400 cursor-pointer">Login</span></p>
             </div>
         </div>
     </div>
@@ -98,68 +92,35 @@
     <script>
         lucide.createIcons();
 
-        function showNotify(title, msg, icon = 'info') {
-            const modal = document.getElementById('notifyModal');
-            document.getElementById('notifyTitle').innerText = title;
-            document.getElementById('notifyMsg').innerText = msg;
-            const iconDiv = document.getElementById('notifyIcon');
-            const iconMap = {
-                'success': '<i data-lucide="check-circle" class="w-10 h-10 text-cyan-400"></i>',
-                'error': '<i data-lucide="alert-circle" class="w-10 h-10 text-red-400"></i>'
-            };
-            iconDiv.innerHTML = iconMap[icon] || '<i data-lucide="info" class="w-10 h-10 text-blue-400"></i>';
-            lucide.createIcons();
-            modal.classList.remove('hidden');
+        function openModal(mode) {
+            document.getElementById('authModal').classList.remove('hidden');
+            toggleAuth(mode);
         }
 
-        function closeNotify() { document.getElementById('notifyModal').classList.add('hidden'); }
-        function openModal(mode) { document.getElementById('authModal').classList.remove('hidden'); toggleMode(mode); }
         function closeModal() { document.getElementById('authModal').classList.add('hidden'); }
 
-        function toggleMode(mode) {
-            document.getElementById('quickJoinSection').classList.toggle('hidden', mode === 'login');
-            document.getElementById('codeSection').classList.toggle('hidden', mode === 'quick-join');
-            document.getElementById('successSection').classList.add('hidden');
+        function toggleAuth(mode) {
+            document.getElementById('quickJoinSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('registerSection').classList.add('hidden');
+
+            if(mode === 'quick-join') document.getElementById('quickJoinSection').classList.remove('hidden');
+            if(mode === 'login') document.getElementById('loginSection').classList.remove('hidden');
+            if(mode === 'register') document.getElementById('registerSection').classList.remove('hidden');
         }
 
         async function joinFrictionless() {
             const service_code = document.getElementById('serviceCode').value;
             const name = document.getElementById('visitorName').value;
-            if(!service_code) return showNotify("Required", "Enter Service Code.", "info");
+            if(!service_code) return alert("Enter Code");
 
-            const btn = document.getElementById('joinBtn');
-            btn.innerText = "JOINING..."; btn.disabled = true;
-
-            try {
-                const res = await fetch('/api/auth/join-frictionless', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ service_code, name })
-                });
-                const data = await res.json();
-                if(data.status === 'success') {
-                    document.getElementById('quickJoinSection').classList.add('hidden');
-                    document.getElementById('successSection').classList.remove('hidden');
-                    document.getElementById('finalLoginCode').innerText = data.token;
-                } else {
-                    showNotify("Failed", data.message, "error");
-                    btn.innerText = "SECURE SPOT"; btn.disabled = false;
-                }
-            } catch (e) { showNotify("Error", "Server unreachable.", "error"); btn.innerText = "SECURE SPOT"; btn.disabled = false; }
-        }
-
-        async function loginWithCode() {
-            const code = document.getElementById('loginCodeInput').value;
-            if(!code) return showNotify("Required", "Enter Q-CODE.", "info");
-            try {
-                const res = await fetch('/api/auth/login-with-code', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ login_code: code })
-                });
-                if(res.ok) { window.location.href = '/status'; } 
-                else { showNotify("Denied", "Invalid Q-CODE.", "error"); }
-            } catch(e) { showNotify("Error", "Login failed.", "error"); }
+            const res = await fetch('/api/auth/join-frictionless', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ service_code, name })
+            });
+            const data = await res.json();
+            if(data.status === 'success') window.location.href = '/status';
         }
     </script>
 </body>
