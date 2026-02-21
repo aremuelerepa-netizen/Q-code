@@ -233,8 +233,15 @@ def suspend_org(org_id):
     if not session.get('is_super_admin'): return jsonify({"status": "error"}), 403
     db.table("organizations").update({"verified": False}).eq("id", org_id).execute()
     return jsonify({"status": "success", "message": "Organization suspended"})
+
+@app.route('/api/admin/reject-org/<org_id>', methods=['POST'])
+def reject_org(org_id):
+    if not session.get('is_super_admin'): return jsonify({"status": "error"}), 403
+    db.table("organizations").delete().eq("id", org_id).execute()
+    return jsonify({"status": "success"})
             
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
