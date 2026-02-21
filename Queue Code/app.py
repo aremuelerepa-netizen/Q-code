@@ -67,8 +67,6 @@ def super_admin_view():
 @app.route('/admin')
 def admin_dashboard():
     if 'org_id' not in session: return redirect(url_for('login_view'))
-    
-    # FIX: Get real name from session or DB to replace "Admin Sarah"
     org_name = session.get('org_name', 'Organization')
     return render_template('Admin page.html', org_name=org_name)
 
@@ -76,10 +74,9 @@ def admin_dashboard():
 
 @app.route('/api/auth/register', methods=['POST'])
 def register_org():
-    # Handle both JSON and Form data to prevent 500 errors
     data = request.json if request.is_json else request.form
     
-    name = data.get('orgName')
+    name = data.get('orgName') or data.get('business_name')
     email = data.get('email')
     phone = data.get('phone')
     password = data.get('password')
@@ -211,7 +208,6 @@ def login_with_code():
     data = request.json
     code = data.get('login_code')
     
-    # Check if the code exists in the queue table
     res = db.table("queue").select("*").eq("login_code", code).execute()
     
     if res.data:
@@ -223,28 +219,7 @@ def login_with_code():
     
     return jsonify({"status": "error", "message": "Invalid Q-CODE"}), 401
             
-            # --- REGISTRATION ROUTE ---
-@app.route('/api/auth/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-    biz_name = data.get('business_name')
-
-    # 1. Check if user exists
-    # 2. Insert into DB with status = 'pending'
-    # Example Supabase logic:
-    # supabase.table('businesses').insert({
-    #    "email": email, 
-    #    "password": hashed_pw, 
-    #    "name": biz_name, 
-    #    "status": "pending"
-    # }).execute()
-
-    return jsonify({"status": "success", "message": "Application submitted for review"}), 201
-            
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
-
-
-
+    # Render requires binding to 0.0.0.0 and using the $PORT environment variable
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
