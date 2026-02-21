@@ -10,6 +10,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from supabase import create_client, Client
 from groq import Groq
 from dotenv import load_dotenv
+from flask import Flask, redirect, url_for, session
 
 load_dotenv()
 
@@ -24,7 +25,33 @@ app.permanent_session_lifetime = timedelta(days=7)
 # --- 1. INITIALIZE CLIENTS ---
 db: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Initialize Supabase
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
 
+@app.route('/api/auth/callback')
+def google_callback():
+    token = google.authorize_access_token()
+    user_info = google.get('userinfo').json()
+    
+    email = user_info.get('email')
+    name = user_info.get('name')
+    google_id = user_info.get('id')
+
+    # Use Supabase 'upsert' (Update if exists, Insert if not)
+    # This matches the user based on the 'email' (primary key or unique)
+    data, count = supabase.table("users").upsert({
+        "email": email,
+        "full_name": name,
+        "auth_provider": "google",
+        "last_login": "now()"
+    }).execute()
+    
+    # Store minimal info in Flask Session
+    session['user_email'] = email
+    
+    return redirect('/userpage')
 # --- 2. HELPER FUNCTIONS ---
 def generate_unique_code():
     return 'QC-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
@@ -356,5 +383,6 @@ def skip_user(user_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
