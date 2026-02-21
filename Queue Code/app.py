@@ -193,22 +193,45 @@ def create_service():
 
 @app.route('/api/auth/join-frictionless', methods=['POST'])
 def join_frictionless():
-    data = request.json
+    data = request.get_json()
     service_code = data.get('service_code')
-    visitor_name = data.get('name', 'Guest User')
-    device_token = generate_unique_code()
-    try:
-        res = db.table("queue").insert({
-            "org_id": service_code, "visitor_name": visitor_name,
-            "login_code": device_token, "entry_type": "WEB_QUICK"
-        }).execute()
-        session.clear()
-        session.permanent = True
-        session['user_id'] = res.data[0]['id']
-        session['org_id'] = service_code
-        return jsonify({"status": "success", "token": device_token})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    visitor_name = data.get('name')
+
+    # 1. Check if the Service Code exists in Supabase
+    # Query the 'services' table where the admin-generated code matches
+    service_query = supabase.table('services').select('id, organization_name').eq('code', service_code).single().execute()
+
+    if not service_query.data:
+        return jsonify({"status": "error", "message": "Service code not found"}), 404
+
+    service_id = service_query.data['id']
+    org_name = service_query.data['organization_name']
+
+    # 2. Calculate the next position in line for this specific service
+    count_query = supabase.table('tickets').select('id', count='exact').eq('service_id', service_id).eq('status', 'waiting').execute()
+    next_position = (count_query.count or 0) + 1
+
+    # 3. Create the ticket
+    ticket_data = {
+        "service_id": service_id,
+        "visitor_name": visitor_name,
+        "position": next_position,
+        "status": "waiting",
+        "created_at": "now()"
+    }
+    
+    ticket_insert = supabase.table('tickets').insert(ticket_data).execute()
+
+    if ticket_insert.data:
+        # Return success with the Org Name so the frontend modal can show it
+        return jsonify({
+            "status": "success",
+            "ticket_id": ticket_insert.data[0]['id'],
+            "organization_name": org_name,
+            "position": next_position
+        })
+
+    return jsonify({"status": "error", "message": "Failed to join queue"}), 500
 
 @app.route('/api/auth/user-register', methods=['POST'])
 def user_register_api():
@@ -334,6 +357,7 @@ def join_queue():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
