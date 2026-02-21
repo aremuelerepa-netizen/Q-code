@@ -3,172 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q-CODE | Login</title>
+    <title>Q-CODE | Fast Queue Solutions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: white; }
         .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
         .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.3s ease; }
-        .btn-cyan:hover { opacity: 0.9; transform: translateY(-1px); }
-        .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
-        .input-field:focus { border-color: #22d3ee; outline: none; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); }
+        .btn-cyan:hover { opacity: 0.9; transform: scale(1.02); }
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen">
 
-    <div id="notifBox" class="fixed top-5 right-5 z-[200] max-w-sm w-full hidden">
-        <div class="glass p-4 rounded-2xl border-l-4 border-cyan-400 flex items-center gap-3 shadow-2xl">
-            <i data-lucide="info" class="text-cyan-400 w-5 h-5"></i>
-            <p id="notifMessage" class="text-xs font-bold text-slate-200"></p>
-        </div>
-    </div>
-
-    <div class="glass w-full max-w-[400px] rounded-[32px] p-8 md:p-10 border-white/10 shadow-2xl">
-        <div class="flex flex-col items-center mb-8">
-            <div class="w-12 h-12 btn-cyan rounded-xl flex items-center justify-center mb-4">
-                <i data-lucide="zap" class="w-6 h-6 text-white fill-current"></i>
+    <main class="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+        <div class="mb-8">
+            <div class="w-16 h-16 btn-cyan rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-cyan-500/20">
+                <i data-lucide="zap" class="w-8 h-8 text-slate-900 fill-current"></i>
             </div>
-            <h2 id="formTitle" class="text-2xl font-black uppercase tracking-tight italic">Welcome Back</h2>
-            <p id="formSubtitle" class="text-slate-400 text-xs uppercase tracking-widest mt-2">Access your business portal</p>
+            <h1 class="text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-4">Q-CODE</h1>
+            <p class="text-slate-400 max-w-md mx-auto text-sm uppercase tracking-widest font-semibold">Skip the wait. Join the digital revolution.</p>
         </div>
 
-        <div id="loginSection" class="space-y-4">
-            <div class="space-y-2">
-                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Email Address</label>
-                <input type="email" id="loginEmail" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="name@company.com">
-            </div>
-            <div class="space-y-2">
-                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Password</label>
-                <input type="password" id="loginPass" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="••••••••">
-            </div>
-            <button onclick="handleLogin()" id="loginBtn" class="btn-cyan w-full py-4 rounded-2xl text-slate-950 font-black uppercase text-xs tracking-widest mt-4">
-                Sign In
+        <div class="flex flex-col gap-4 w-full max-w-xs">
+            <button onclick="openAuthModal('quick-join')" class="btn-cyan py-5 rounded-2xl text-slate-950 font-black uppercase text-xs tracking-widest">
+                Join a Queue Fast
             </button>
-            <p class="text-center text-[10px] text-slate-500 font-bold uppercase mt-6">
-                Don't have an account? 
-                <span onclick="toggleView('register')" class="text-cyan-400 cursor-pointer hover:underline ml-1">Register</span>
-            </p>
-        </div>
-
-        <div id="registerSection" class="space-y-4 hidden">
-            <div class="space-y-2">
-                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Email Address</label>
-                <input type="email" id="regEmail" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="name@company.com">
-            </div>
-            <div class="space-y-2">
-                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Create Password</label>
-                <input type="password" id="regPass" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="Min. 8 characters">
-            </div>
-            <button onclick="handleRegister()" id="regBtn" class="btn-cyan w-full py-4 rounded-2xl text-slate-950 font-black uppercase text-xs tracking-widest mt-4">
-                Create Account
-            </button>
-            <p class="text-center text-[10px] text-slate-500 font-bold uppercase mt-6">
-                Already registered? 
-                <span onclick="toggleView('login')" class="text-cyan-400 cursor-pointer hover:underline ml-1">Login</span>
-            </p>
-        </div>
-        
-        <div class="mt-8 pt-6 border-t border-white/5 text-center">
-            <a href="/" class="text-[10px] font-bold text-slate-500 uppercase hover:text-white transition-colors">
-                ← Back to Home
+            <a href="/login" class="glass py-5 rounded-2xl text-white font-bold uppercase text-[10px] tracking-[0.2em]">
+                Business Portal
             </a>
+        </div>
+    </main>
+
+    <div id="authModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-[100]">
+        <div class="glass w-full max-w-[380px] rounded-[32px] p-8 relative border-white/10 shadow-2xl">
+            <button onclick="closeAuthModal()" class="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
+                <i data-lucide="x"></i>
+            </button>
+
+            <div id="quickJoinSection" class="space-y-6 pt-4">
+                <div class="text-center">
+                    <h3 class="text-2xl font-black italic uppercase">Quick Join</h3>
+                    <p class="text-slate-400 text-[10px] uppercase tracking-widest mt-1">No account required</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <input type="text" id="serviceCode" 
+                        class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center uppercase font-bold text-cyan-400 focus:border-cyan-400 outline-none transition-all" 
+                        placeholder="ENTER SERVICE CODE">
+                    
+                    <input type="text" id="visitorName" 
+                        class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center text-white focus:border-cyan-400 outline-none transition-all" 
+                        placeholder="YOUR NAME">
+                </div>
+
+                <button id="joinBtn" onclick="joinFrictionless()" 
+                    class="btn-cyan w-full py-4 text-slate-950 font-black rounded-xl uppercase text-xs tracking-widest mt-2 shadow-lg shadow-cyan-500/10">
+                    Secure Spot
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
 
-        function notify(msg) {
-            const box = document.getElementById('notifBox');
-            document.getElementById('notifMessage').innerText = msg;
-            box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 4000);
+        // Modal Controls
+        function openAuthModal(mode) {
+            const modal = document.getElementById('authModal');
+            const qjSection = document.getElementById('quickJoinSection');
+            
+            modal.classList.remove('hidden');
+            // Ensure section is visible
+            qjSection.classList.remove('hidden');
         }
 
-        function toggleView(view) {
-            const loginSection = document.getElementById('loginSection');
-            const registerSection = document.getElementById('registerSection');
-            const title = document.getElementById('formTitle');
-            const subtitle = document.getElementById('formSubtitle');
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
 
-            if (view === 'register') {
-                loginSection.classList.add('hidden');
-                registerSection.classList.remove('hidden');
-                title.innerText = "Create Vault";
-                subtitle.innerText = "Start managing your queue";
-            } else {
-                registerSection.classList.add('hidden');
-                loginSection.classList.remove('hidden');
-                title.innerText = "Welcome Back";
-                subtitle.innerText = "Access your business portal";
+        // Logic to Join Queue
+        async function joinFrictionless() {
+            const code = document.getElementById('serviceCode').value.trim();
+            const name = document.getElementById('visitorName').value.trim();
+            const btn = document.getElementById('joinBtn');
+
+            if (!code || !name) {
+                alert("Please fill in both fields");
+                return;
             }
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPass').value;
-            const btn = document.getElementById('loginBtn');
-
-            if (!email || !password) return notify("Fields cannot be empty");
 
             btn.disabled = true;
-            btn.innerText = "AUTHENTICATING...";
+            btn.innerText = "LINKING...";
 
             try {
-                const res = await fetch('/api/auth/user-login', {
+                // Matches the route in your app.py
+                const res = await fetch('/api/auth/join-frictionless', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ 
+                        service_code: code, 
+                        name: name 
+                    })
                 });
+
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    // Save token if needed for Supabase RLS
-                    localStorage.setItem('sb_token', data.session);
-                    window.location.href = '/userpage';
+                    // Success! Go to status page with ticket ID
+                    window.location.href = `/status?ticket=${data.ticket_id}`;
                 } else {
-                    notify(data.message);
+                    alert(data.message || "Invalid Code");
                     btn.disabled = false;
-                    btn.innerText = "SIGN IN";
+                    btn.innerText = "Secure Spot";
                 }
             } catch (err) {
-                notify("Connection Error");
+                console.error(err);
+                alert("Connection Error. Is the server awake?");
                 btn.disabled = false;
-                btn.innerText = "SIGN IN";
-            }
-        }
-
-        async function handleRegister() {
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPass').value;
-            const btn = document.getElementById('regBtn');
-
-            if (!email || !password) return notify("Fields cannot be empty");
-
-            btn.disabled = true;
-            btn.innerText = "CREATING...";
-
-            try {
-                const res = await fetch('/api/auth/user-register', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-
-                if (data.status === 'success') {
-                    notify("Account created! Check your email to confirm.");
-                    setTimeout(() => toggleView('login'), 2000);
-                } else {
-                    notify(data.message);
-                }
-            } catch (err) {
-                notify("Registration failed");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "CREATE ACCOUNT";
+                btn.innerText = "Secure Spot";
             }
         }
     </script>
