@@ -328,7 +328,8 @@ def verify_completion():
 @app.route('/api/queue/join', methods=['POST'])
 def join_queue():
     data = request.json
-    code = data.get('service_code', '').strip().toUpperCase()
+    # Python uses .upper(), not .toUpperCase()
+    code = data.get('service_code', '').strip().upper()
     visitor = data.get('visitor_name', 'Guest')
 
     # 1. Find the service that matches this code
@@ -342,21 +343,64 @@ def join_queue():
 
     service = service_query.data[0]
 
-    # 2. Add the user to the queue table
+    # 2. Get current queue count to show user their position
+    # This counts how many people are currently 'waiting' for this specific service
+    pos_query = supabase.table('queue')\
+        .select('id', count='exact')\
+        .eq('service_id', service['id'])\
+        .eq('status', 'waiting')\
+        .execute()
+    
+    current_position = (pos_query.count or 0) + 1
+
+    # 3. Add the user to the queue table
     new_entry = {
         "service_id": service['id'],
-        "org_id": service['org_id'],
+        "org_id": service.get('org_id'), # Using .get in case it's missing
         "visitor_name": visitor,
-        "status": "waiting"
+        "status": "waiting",
+        "position_at_join": current_position # Useful for history
     }
     
-    supabase.table('queue').insert(new_entry).execute()
+    # We store the result of the insert to get the generated ID
+    insert_result = supabase.table('queue').insert(new_entry).execute()
 
-    return jsonify({"status": "success", "message": "Joined!"})
-            
+    if not insert_result.data:
+        return jsonify({"status": "error", "message": "Database insert failed"}), 500
+
+    # 4. Return EVERYTHING the frontend needs
+    return jsonify({
+        "status": "success", 
+        "message": "Joined!",
+        "ticket_id": insert_result.data[0]['id'], # REQUIRED for the frontend polling
+        "service_name": service.get('service_name', 'Service'), # To show on the ticket
+        "position": current_position
+    })
+
+@app.route('/api/queue/complete', methods=['POST'])
+def complete_session():
+    data = request.get_json()
+    ticket_id = data.get('ticket_id')
+    user_end_code = data.get('end_code')
+
+    # 1. Get the service associated with this ticket to find the correct end_code
+    ticket = supabase.table('tickets').select('service_id').eq('id', ticket_id).single().execute()
+    service_id = ticket.data['service_id']
+    
+    service = supabase.table('services').select('end_code').eq('id', service_id).single().execute()
+
+    # 2. Verify the code
+    if service.data['end_code'] == user_end_code:
+        # Update ticket status to completed
+        supabase.table('tickets').update({"status": "completed"}).eq('id', ticket_id).execute()
+        return jsonify({"status": "success"})
+    else:
+        return jsonify({"status": "error", "message": "Invalid end code"}), 403
+                
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
