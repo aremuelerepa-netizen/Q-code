@@ -291,7 +291,64 @@ def user_login():
         return jsonify({"status": "error", "message": "Invalid email or password"}), 401
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/services/create', methods=['POST'])
+def create_service():
+    if 'org_id' not in session: return jsonify({"status": "error"}), 401
+    data = request.json
+    
+    # Generate a unique Service Code for this specific service
+    # Example: QC-SERV-1234
+    service_code = 'SERV-' + ''.join(random.choices(string.digits, k=6))
+    
+    try:
+        db.table("services").insert({
+            "org_id": session['org_id'], 
+            "name": data.get('name'),
+            "service_code": service_code, # Public Code
+            "end_code": generate_unique_code(), # Private Admin Code
+            "start_time": data.get('start_time'), 
+            "end_time": data.get('end_time'),
+            "avg_session": data.get('avg_time'), 
+            "staff_list": data.get('staff'),
+            "required_fields": data.get('fields')
+        }).execute()
+        
+        return jsonify({
+            "status": "success", 
+            "service_code": service_code,
+            "message": "Service Live!"
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/admin/verify-completion', methods=['POST'])
+def verify_completion():
+    if 'org_id' not in session: return jsonify({"status": "error"}), 401
+    data = request.json
+    entered_code = data.get('code')
+    
+    # Check if the code matches the service's end_code
+    res = db.table("services").select("end_code").eq("org_id", session['org_id']).execute()
+    
+    if res.data and res.data[0]['end_code'] == entered_code:
+        # Mark current user as completed
+        db.table("queue").update({"status": "completed"}).eq("org_id", session['org_id']).eq("status", "serving").execute()
+        return jsonify({"status": "success"})
+    
+    return jsonify({"status": "error", "message": "Invalid Code"}), 400
+
+@app.route('/api/admin/skip-user/<user_id>', methods=['POST'])
+def skip_user(user_id):
+    """Automatically triggered if the 5-minute timer hits zero."""
+    if 'org_id' not in session: return jsonify({"status": "error"}), 401
+    
+    # Mark user as 'no-show' and move to next
+    db.table("queue").update({"status": "no-show"}).eq("id", user_id).execute()
+    
+    return jsonify({"status": "success", "message": "User skipped due to timeout"})
                                 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
