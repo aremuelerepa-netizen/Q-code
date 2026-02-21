@@ -209,7 +209,32 @@ def list_services():
     if 'org_id' not in session: return jsonify([]), 401
     res = db.table("services").select("*").eq("org_id", session['org_id']).execute()
     return jsonify(res.data)
+            
+# --- SUPER ADMIN ADVANCED ROUTES ---
 
+@app.route('/api/admin/stats')
+def get_platform_stats():
+    """Returns high-level numbers for the dashboard cards."""
+    if not session.get('is_super_admin'): return jsonify({}), 403
+    
+    org_count = db.table("organizations").select("id", count='exact').execute().count
+    queue_count = db.table("queue").select("id", count='exact').execute().count
+    pending = db.table("organizations").select("id", count='exact').eq("verified", False).execute().count
+    
+    return jsonify({
+        "total_orgs": org_count,
+        "total_users": queue_count,
+        "pending_apps": pending
+    })
+
+@app.route('/api/admin/suspend-org/<org_id>', methods=['POST'])
+def suspend_org(org_id):
+    """Allows admin to temporarily disable a business account."""
+    if not session.get('is_super_admin'): return jsonify({"status": "error"}), 403
+    db.table("organizations").update({"verified": False}).eq("id", org_id).execute()
+    return jsonify({"status": "success", "message": "Organization suspended"})
+            
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
