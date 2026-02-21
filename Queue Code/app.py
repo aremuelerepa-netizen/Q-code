@@ -87,6 +87,11 @@ def admin_dashboard():
     if 'org_id' not in session: return redirect(url_for('login_view'))
     org_name = session.get('org_name', 'Organization')
     return render_template('Admin page.html', org_name=org_name)
+@app.route('/logout-admin')
+def logout_admin():
+    session.clear()
+    # This redirects specifically to the Organization/Admin login view
+    return redirect(url_for('login_view'))
 
 # --- 4. SUPER ADMIN ACTIONS ---
 
@@ -351,4 +356,5 @@ def skip_user(user_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
