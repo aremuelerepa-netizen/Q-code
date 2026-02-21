@@ -205,6 +205,24 @@ def sim_webhook():
         reply = "Q-CODE: Invalid Service Code."
 
     return jsonify({"to": sender_phone, "message": reply})
-
+            
+@app.route('/api/auth/login-with-code', methods=['POST'])
+def login_with_code():
+    data = request.json
+    code = data.get('login_code')
+    
+    # Check if the code exists in the queue table
+    res = db.table("queue").select("*").eq("login_code", code).execute()
+    
+    if res.data:
+        user = res.data[0]
+        session.clear()
+        session['user_id'] = user['id']
+        session['user_email'] = user.get('email')
+        return jsonify({"status": "success"})
+    
+    return jsonify({"status": "error", "message": "Invalid Q-CODE"}), 401
+            
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
+
