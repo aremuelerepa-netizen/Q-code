@@ -5,6 +5,7 @@ import requests
 import smtplib
 from email.message import EmailMessage
 from datetime import timedelta
+from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from supabase import create_client, Client
 from groq import Groq
@@ -29,7 +30,7 @@ def generate_unique_code():
     return 'QC-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
 def send_free_email(to_email, subject, body_text):
-    """FREE METHOD: Uses Gmail App Password. Render allows Port 465."""
+    """Uses Gmail App Password. Wrapped in try/except to prevent server SIGKILL."""
     gmail_user = os.getenv("GMAIL_USER")
     gmail_pass = os.getenv("GMAIL_APP_PASSWORD") 
     
@@ -40,13 +41,29 @@ def send_free_email(to_email, subject, body_text):
     msg["To"] = to_email
 
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        # Reduced timeout to prevent Gunicorn worker timeout
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=5) as smtp:
             smtp.login(gmail_user, gmail_pass)
             smtp.send_message(msg)
         return True
     except Exception as e:
-        print(f"EMAIL ERROR: {e}")
+        print(f"NON-CRITICAL EMAIL ERROR: {e}")
         return False
+
+# Middleware to protect separate feature pages (Identity Grows Later)
+def upgrade_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('home'))
+        
+        # Check if they have an email (Verified User)
+        res = db.table("queue").select("email").eq("id", session['user_id']).single().execute()
+        if not res.data or not res.data.get('email'):
+            # If no email, they see the 'Upgrade' prompt instead of the feature
+            return render_template('upgrade_prompt.html')
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- 3. PAGE ROUTES ---
 @app.route('/')
@@ -70,38 +87,65 @@ def admin_dashboard():
     org_name = session.get('org_name', 'Organization')
     return render_template('Admin page.html', org_name=org_name)
 
-# --- 4. ORG REGISTRATION & LOGIN ---
+# --- 4. FRICTIONLESS USER FLOW ---
+
+@app.route('/api/auth/join-frictionless', methods=['POST'])
+def join_frictionless():
+    """Uber-style frictionless onboarding: Just a name and service code."""
+    data = request.json
+    service_code = data.get('service_code')
+    visitor_name = data.get('name', 'Guest User')
+    device_token = generate_unique_code()
+    
+    try:
+        res = db.table("queue").insert({
+            "org_id": service_code,
+            "visitor_name": visitor_name,
+            "login_code": device_token,
+            "entry_type": "WEB_QUICK"
+        }).execute()
+        
+        session.clear()
+        session.permanent = True
+        session['user_id'] = res.data[0]['id']
+        session['user_token'] = device_token
+        
+        return jsonify({"status": "success", "token": device_token})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/auth/upgrade-identity', methods=['POST'])
+def upgrade_identity():
+    """Later, if they want dashboard features, they add an email."""
+    if 'user_id' not in session: return jsonify({"status": "error"}), 401
+    
+    email = request.json.get('email')
+    try:
+        db.table("queue").update({"email": email}).eq("id", session['user_id']).execute()
+        return jsonify({"status": "success", "message": "Identity upgraded!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# --- 5. ORG REGISTRATION & LOGIN ---
 
 @app.route('/api/auth/register', methods=['POST'])
 def register_org():
     data = request.json if request.is_json else request.form
-    
     name = data.get('orgName') or data.get('business_name')
-    email = data.get('email')
-    phone = data.get('phone')
-    password = data.get('password')
+    email, phone, password = data.get('email'), data.get('phone'), data.get('password')
     
     try:
-        # 1. ALWAYS do the database part first
+        # DB first (Essential)
         db.table("organizations").insert({
             "name": name, "email": email, "phone": phone, 
             "password": password, "verified": False
         }).execute()
         
-        # 2. Try to send the email, but DON'T crash if it fails
-        try:
-            send_free_email(
-                os.getenv("ADMIN_EMAIL"), 
-                "New Org Application", 
-                f"Organization {name} is waiting for approval."
-            )
-        except Exception as email_err:
-            print(f"Non-critical Email Error: {email_err}")
-
+        # Email second (Non-essential/wrapped)
+        send_free_email(os.getenv("ADMIN_EMAIL"), "New Org Application", f"Org {name} is waiting.")
+        
         return jsonify({"status": "success", "message": "Application submitted!"})
-
     except Exception as e:
-        print(f"REG ERROR: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -128,7 +172,7 @@ def login():
     
     return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
-# --- 5. SERVICE MANAGEMENT ---
+# --- 6. SERVICE MANAGEMENT & USER AUTH ---
 
 @app.route('/api/services/create', methods=['POST'])
 def create_service():
@@ -136,12 +180,9 @@ def create_service():
     data = request.json
     try:
         db.table("services").insert({
-            "org_id": session['org_id'],
-            "name": data.get('name'),
-            "start_time": data.get('start_time'),
-            "end_time": data.get('end_time'),
-            "avg_session": data.get('avg_time'),
-            "staff_list": data.get('staff'),
+            "org_id": session['org_id'], "name": data.get('name'),
+            "start_time": data.get('start_time'), "end_time": data.get('end_time'),
+            "avg_session": data.get('avg_time'), "staff_list": data.get('staff'),
             "required_fields": data.get('fields')
         }).execute()
         return jsonify({"status": "success"})
@@ -151,82 +192,49 @@ def create_service():
 @app.route('/api/services/list', methods=['GET'])
 def list_services():
     if 'org_id' not in session: return jsonify([]), 401
-    try:
-        res = db.table("services").select("*").eq("org_id", session['org_id']).execute()
-        return jsonify(res.data)
-    except Exception as e:
-        print(f"DB Error: {e}")
-        return jsonify([]), 500
-
-# --- 6. USER AUTH (GMAIL OTP) ---
+    res = db.table("services").select("*").eq("org_id", session['org_id']).execute()
+    return jsonify(res.data)
 
 @app.route('/api/auth/request-email-otp', methods=['POST'])
 def request_email_otp():
     email = request.json.get('email')
     otp = str(random.randint(100000, 999999))
     session['temp_otp'], session['temp_email'] = otp, email
-    
-    success = send_free_email(
-        email, 
-        "Q-CODE Verification", 
-        f"Your verification code is: {otp}"
-    )
-    
-    if success: return jsonify({"status": "sent"})
-    return jsonify({"status": "error", "message": "Email delivery failed"}), 500
+    if send_free_email(email, "Q-CODE Verification", f"Your code: {otp}"):
+        return jsonify({"status": "sent"})
+    return jsonify({"status": "error"}), 500
 
 @app.route('/api/auth/verify-email-otp', methods=['POST'])
 def verify_email_otp():
-    user_otp = request.json.get('otp')
-    if user_otp == session.get('temp_otp'):
+    if request.json.get('otp') == session.get('temp_otp'):
         email = session.get('temp_email')
         login_code = generate_unique_code()
-        
-        db.table("queue").upsert({
-            "email": email, "login_code": login_code, "visitor_name": email.split('@')[0]
-        }, on_conflict="email").execute()
-        
+        db.table("queue").upsert({"email": email, "login_code": login_code}, on_conflict="email").execute()
         return jsonify({"status": "success", "login_code": login_code})
     return jsonify({"status": "invalid"}), 401
 
-# --- 7. SIM WEBHOOK ---
+@app.route('/api/auth/login-with-code', methods=['POST'])
+def login_with_code():
+    res = db.table("queue").select("*").eq("login_code", request.json.get('login_code')).execute()
+    if res.data:
+        session.clear()
+        session['user_id'] = res.data[0]['id']
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error"}), 401
 
 @app.route('/api/sms/incoming', methods=['POST'])
 def sim_webhook():
     data = request.json 
-    sender_phone = data.get('from')
-    msg_body = data.get('message', '').strip().upper()
-
+    sender_phone, msg_body = data.get('from'), data.get('message', '').strip().upper()
     res = db.table("organizations").select("name", "id").eq("id", msg_body).execute()
     if res.data:
         org = res.data[0]
-        db.table("queue").insert({
-            "phone": sender_phone, "org_id": org['id'], "entry_type": "SIM"
-        }).execute()
-        reply = f"Q-CODE: You are in line for {org['name']}."
+        db.table("queue").insert({"phone": sender_phone, "org_id": org['id'], "entry_type": "SIM"}).execute()
+        reply = f"Q-CODE: In line for {org['name']}."
     else:
         reply = "Q-CODE: Invalid Service Code."
-
     return jsonify({"to": sender_phone, "message": reply})
-            
-@app.route('/api/auth/login-with-code', methods=['POST'])
-def login_with_code():
-    data = request.json
-    code = data.get('login_code')
-    
-    res = db.table("queue").select("*").eq("login_code", code).execute()
-    
-    if res.data:
-        user = res.data[0]
-        session.clear()
-        session['user_id'] = user['id']
-        session['user_email'] = user.get('email')
-        return jsonify({"status": "success"})
-    
-    return jsonify({"status": "error", "message": "Invalid Q-CODE"}), 401
-            
+
 if __name__ == '__main__':
-    # Render requires binding to 0.0.0.0 and using the $PORT environment variable
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
-
