@@ -19,6 +19,7 @@
 </head>
 <body class="min-h-screen bg-[#0f172a]">
 
+<!-- Notification Modal -->
 <div id="notifModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center p-6 modal-backdrop">
     <div class="glass w-full max-w-sm rounded-[2.5rem] p-8 text-center space-y-6 border-cyan-500/30">
         <div id="modalIcon" class="w-16 h-16 bg-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center mx-auto">
@@ -32,6 +33,7 @@
     </div>
 </div>
 
+<!-- Navbar -->
 <nav class="fixed top-0 w-full z-50 px-4 py-4 flex items-center justify-between glass border-b border-white/5">
     <div class="flex items-center gap-2 order-2">
         <span class="text-lg font-black tracking-tighter uppercase italic">Q-CODE</span>
@@ -44,6 +46,7 @@
     </a>
 </nav>
 
+<!-- Main Landing -->
 <main class="relative pt-32 pb-12 px-4 flex flex-col items-center justify-center text-center min-h-screen">
     <div class="cartoon-float mb-8">
         <svg width="180" height="180" viewBox="0 0 200 200" fill="none">
@@ -64,6 +67,7 @@
     </div>
 </main>
 
+<!-- Auth Modal -->
 <div id="authModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4 z-[100]">
     <div class="glass w-full max-w-[380px] rounded-[28px] p-8 relative border-white/10">
         <button type="button" onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-500">
@@ -90,50 +94,34 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
-
-    if (localStorage.getItem('active_ticket_id')) {
-        window.location.href = '/status';
-    }
+    if (localStorage.getItem('active_ticket_id')) window.location.href = '/status';
 });
 
 function showModal(title, message, isSuccess = false) {
     document.getElementById('modalTitle').innerText = title;
     document.getElementById('modalMsg').innerText = message;
     const icon = document.getElementById('modalIcon');
-
     icon.className = isSuccess
         ? "w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto"
         : "w-16 h-16 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto";
-
     document.getElementById('notifModal').classList.remove('hidden');
 }
 
-function closeNotifModal() {
-    document.getElementById('notifModal').classList.add('hidden');
-}
-
+function closeNotifModal() { document.getElementById('notifModal').classList.add('hidden'); }
 function openAuthModal(mode) {
     const section = document.getElementById('quickJoinSection');
-    section.classList.add('hidden');   // reset state
+    section.classList.add('hidden');
     document.getElementById('authModal').classList.remove('hidden');
-
-    if (mode === 'quick-join') {
-        section.classList.remove('hidden');
-    }
+    if (mode === 'quick-join') section.classList.remove('hidden');
 }
-
-function closeAuthModal() {
-    document.getElementById('authModal').classList.add('hidden');
-}
+function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 
 async function joinFrictionless() {
     const serviceCode = document.getElementById('serviceCode').value.trim().toUpperCase();
     const visitorName = document.getElementById('visitorName').value.trim();
     const btn = document.getElementById('joinBtn');
 
-    if (!serviceCode || !visitorName) {
-        return showModal('Error', 'Please provide both your name and the service code.');
-    }
+    if (!serviceCode || !visitorName) return showModal('Error', 'Please provide both your name and the service code.');
 
     btn.disabled = true;
     btn.innerText = "VERIFYING...";
@@ -145,12 +133,7 @@ async function joinFrictionless() {
             body: JSON.stringify({ service_code: serviceCode, name: visitorName })
         });
 
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            throw new Error("Invalid JSON");
-        }
+        const data = await response.json().catch(() => ({ status: 'error', message: 'Invalid server response.' }));
 
         if (data.status === 'success') {
             localStorage.setItem('active_ticket_id', data.ticket_id);
@@ -164,8 +147,7 @@ async function joinFrictionless() {
             btn.disabled = false;
             btn.innerText = "VERIFY & JOIN QUEUE";
         }
-
-    } catch (error) {
+    } catch {
         showModal('System Error', 'Unable to connect. Please try again.');
         btn.disabled = false;
         btn.innerText = "VERIFY & JOIN QUEUE";
