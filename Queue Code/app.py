@@ -2,8 +2,8 @@ import os
 import random
 import string
 import requests
-import smtplib  
-from email.message import EmailMessage 
+import smtplib
+from email.message import EmailMessage
 from datetime import timedelta
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from supabase import create_client, Client
@@ -29,13 +29,14 @@ def generate_unique_code():
     return 'QC-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
 def send_free_email(to_email, subject, body_text):
+    """FREE METHOD: Uses Gmail App Password. Render allows Port 465."""
     gmail_user = os.getenv("GMAIL_USER")
     gmail_pass = os.getenv("GMAIL_APP_PASSWORD") 
     
     msg = EmailMessage()
     msg.set_content(body_text)
     msg["Subject"] = subject
-    msg["From"] = gmail_user
+    msg["From"] = f"Q-CODE System <{gmail_user}>"
     msg["To"] = to_email
 
     try:
@@ -60,23 +61,28 @@ def reg_view(): return render_template('org reg page.html')
 @app.route('/super-admin')
 def super_admin_view():
     if not session.get('is_super_admin'): return redirect(url_for('login_view'))
-    # Fetch Orgs that are NOT yet verified
     res = db.table("organizations").select("*").eq("verified", False).execute()
     return render_template('super_admin.html', pending_orgs=res.data)
 
 @app.route('/admin')
 def admin_dashboard():
     if 'org_id' not in session: return redirect(url_for('login_view'))
-    return render_template('Admin page.html')
+    
+    # FIX: Get real name from session or DB to replace "Admin Sarah"
+    org_name = session.get('org_name', 'Organization')
+    return render_template('Admin page.html', org_name=org_name)
 
 # --- 4. ORG REGISTRATION & LOGIN ---
 
 @app.route('/api/auth/register', methods=['POST'])
 def register_org():
-    name = request.form.get('orgName')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
-    password = request.form.get('password')
+    # Handle both JSON and Form data to prevent 500 errors
+    data = request.json if request.is_json else request.form
+    
+    name = data.get('orgName')
+    email = data.get('email')
+    phone = data.get('phone')
+    password = data.get('password')
     
     try:
         db.table("organizations").insert({
@@ -84,6 +90,7 @@ def register_org():
             "password": password, "verified": False
         }).execute()
         
+        # Notify Super Admin (Non-blocking)
         send_free_email(
             os.getenv("ADMIN_EMAIL"), 
             "New Org Application", 
@@ -91,6 +98,7 @@ def register_org():
         )
         return jsonify({"status": "success", "message": "Application submitted!"})
     except Exception as e:
+        print(f"REG ERROR: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -108,6 +116,7 @@ def login():
         org = res.data[0]
         if org['verified']:
             session.clear()
+            session.permanent = True
             session['org_id'] = str(org['id'])
             session['org_name'] = org['name']
             session['is_super_admin'] = False
@@ -116,12 +125,11 @@ def login():
     
     return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
-# --- 5. SERVICE NODE MANAGEMENT (FOR ADMINS) ---
+# --- 5. SERVICE MANAGEMENT ---
 
 @app.route('/api/services/create', methods=['POST'])
 def create_service():
-    if 'org_id' not in session: return jsonify({"status": "error", "message": "Unauthorized"}), 401
-    
+    if 'org_id' not in session: return jsonify({"status": "error"}), 401
     data = request.json
     try:
         db.table("services").insert({
@@ -140,19 +148,14 @@ def create_service():
 @app.route('/api/services/list', methods=['GET'])
 def list_services():
     if 'org_id' not in session: return jsonify([]), 401
-    res = db.table("services").select("*").eq("org_id", session['org_id']).execute()
-    return jsonify(res.data)
+    try:
+        res = db.table("services").select("*").eq("org_id", session['org_id']).execute()
+        return jsonify(res.data)
+    except Exception as e:
+        print(f"DB Error: {e}")
+        return jsonify([]), 500
 
-# --- 6. SUPER ADMIN ACTIONS ---
-
-@app.route('/api/admin/verify-org', methods=['POST'])
-def verify_org():
-    if not session.get('is_super_admin'): return jsonify({"status": "denied"}), 403
-    org_id = request.json.get('org_id')
-    db.table("organizations").update({"verified": True}).eq("id", org_id).execute()
-    return jsonify({"status": "success"})
-
-# --- 7. USER AUTH & OTP ---
+# --- 6. USER AUTH (GMAIL OTP) ---
 
 @app.route('/api/auth/request-email-otp', methods=['POST'])
 def request_email_otp():
@@ -165,6 +168,7 @@ def request_email_otp():
         "Q-CODE Verification", 
         f"Your verification code is: {otp}"
     )
+    
     if success: return jsonify({"status": "sent"})
     return jsonify({"status": "error", "message": "Email delivery failed"}), 500
 
@@ -174,13 +178,15 @@ def verify_email_otp():
     if user_otp == session.get('temp_otp'):
         email = session.get('temp_email')
         login_code = generate_unique_code()
+        
         db.table("queue").upsert({
             "email": email, "login_code": login_code, "visitor_name": email.split('@')[0]
         }, on_conflict="email").execute()
+        
         return jsonify({"status": "success", "login_code": login_code})
     return jsonify({"status": "invalid"}), 401
 
-# --- 8. SIM WEBHOOK ---
+# --- 7. SIM WEBHOOK ---
 
 @app.route('/api/sms/incoming', methods=['POST'])
 def sim_webhook():
