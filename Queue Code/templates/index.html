@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Q-CODE | Premium Queue Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; }
-        .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .modal-backdrop { background: rgba(2, 6, 23, 0.9); backdrop-filter: blur(10px); }
-        .cartoon-float { animation: float 6s ease-in-out infinite; }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Q-CODE | Premium Queue Management</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; }
+    .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+    .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .modal-backdrop { background: rgba(2, 6, 23, 0.9); backdrop-filter: blur(10px); }
+    .cartoon-float { animation: float 6s ease-in-out infinite; }
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+</style>
 </head>
 <body class="min-h-screen bg-[#0f172a]">
 
@@ -27,13 +27,11 @@
         </div>
         <h3 id="modalTitle" class="text-xl font-black italic uppercase">Notice</h3>
         <p id="modalMsg" class="text-xs text-slate-400 leading-relaxed"></p>
-        <button type="button" onclick="closeNotifModal()" class="w-full py-4 btn-cyan text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest">
-            Continue
-        </button>
+        <button onclick="closeNotifModal()" class="w-full py-4 btn-cyan text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest">Continue</button>
     </div>
 </div>
 
-<!-- Navbar -->
+<!-- Navigation -->
 <nav class="fixed top-0 w-full z-50 px-4 py-4 flex items-center justify-between glass border-b border-white/5">
     <div class="flex items-center gap-2 order-2">
         <span class="text-lg font-black tracking-tighter uppercase italic">Q-CODE</span>
@@ -41,18 +39,21 @@
             <i data-lucide="zap" class="w-3 h-3 text-white fill-current"></i>
         </div>
     </div>
-    <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider order-1">
-        Business Portal
-    </a>
+    <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider order-1">Business Portal</a>
 </nav>
 
-<!-- Main Landing -->
+<!-- Main Section -->
 <main class="relative pt-32 pb-12 px-4 flex flex-col items-center justify-center text-center min-h-screen">
     <div class="cartoon-float mb-8">
-        <svg width="180" height="180" viewBox="0 0 200 200" fill="none">
-            <circle cx="100" cy="100" r="80" fill="#22d3ee" fill-opacity="0.1"/>
+        <svg width="180" height="180" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="80" fill="url(#paint0_linear)" fill-opacity="0.1"/>
             <path d="M70 140C70 140 85 110 100 110C115 110 130 140 130 140" stroke="#22d3ee" stroke-width="8" stroke-linecap="round"/>
             <circle cx="100" cy="70" r="25" stroke="#22d3ee" stroke-width="8"/>
+            <defs>
+                <linearGradient id="paint0_linear" x1="100" y1="20" x2="100" y2="180" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#22d3ee"/><stop offset="1" stop-color="#0ea5e9"/>
+                </linearGradient>
+            </defs>
         </svg>
     </div>
 
@@ -60,97 +61,94 @@
         <h1 class="text-5xl md:text-7xl font-black tracking-tight mb-4 leading-[1.1]">
             Wait Less, <br><span class="text-gradient">Live More.</span>
         </h1>
-
-        <button type="button" onclick="openAuthModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase tracking-widest shadow-xl shadow-cyan-500/20 mb-12">
+        <button onclick="openAuthModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase tracking-widest shadow-xl shadow-cyan-500/20 mb-12">
             Join a Queue Fast
         </button>
     </div>
 </main>
 
-<!-- Auth Modal -->
+<!-- Quick Join Modal -->
 <div id="authModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4 z-[100]">
     <div class="glass w-full max-w-[380px] rounded-[28px] p-8 relative border-white/10">
-        <button type="button" onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-500">
-            <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-
+        <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
         <div id="quickJoinSection" class="space-y-6 pt-4 hidden">
             <div class="text-center">
                 <h3 class="text-xl font-black mb-1 italic uppercase">Quick Join</h3>
-                <p class="text-slate-400 text-xs">Enter the service code provided to you.</p>
+                <p class="text-slate-400 text-xs">Enter the code from the Supabase directory.</p>
             </div>
-
             <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center font-bold uppercase" placeholder="ENTER SERVICE CODE">
-
             <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center" placeholder="ENTER YOUR NAME">
-
-            <button type="button" id="joinBtn" onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">
-                VERIFY & JOIN QUEUE
-            </button>
+            <button id="joinBtn" onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Verify & Join Queue</button>
         </div>
     </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    lucide.createIcons();
-    if (localStorage.getItem('active_ticket_id')) window.location.href = '/status';
-});
+lucide.createIcons();
 
-function showModal(title, message, isSuccess = false) {
-    document.getElementById('modalTitle').innerText = title;
-    document.getElementById('modalMsg').innerText = message;
+// Redirect if already in queue
+window.onload = () => {
+    if (localStorage.getItem('active_ticket_id')) window.location.href = '/status';
+};
+
+function showModal(title, message, isSuccess = false){
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMsg').textContent = message;
     const icon = document.getElementById('modalIcon');
-    icon.className = isSuccess
-        ? "w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto"
-        : "w-16 h-16 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto";
+    icon.classList.remove('bg-green-500/20','text-green-400','bg-rose-500/20','text-rose-400');
+    icon.classList.add(isSuccess ? 'bg-green-500/20','text-green-400' : 'bg-rose-500/20','text-rose-400');
     document.getElementById('notifModal').classList.remove('hidden');
 }
 
-function closeNotifModal() { document.getElementById('notifModal').classList.add('hidden'); }
-function openAuthModal(mode) {
-    const section = document.getElementById('quickJoinSection');
-    section.classList.add('hidden');
-    document.getElementById('authModal').classList.remove('hidden');
-    if (mode === 'quick-join') section.classList.remove('hidden');
+function closeNotifModal(){
+    document.getElementById('notifModal').classList.add('hidden');
 }
-function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 
-async function joinFrictionless() {
+function openAuthModal(mode){
+    document.getElementById('authModal').classList.remove('hidden');
+    document.getElementById('quickJoinSection').classList.add(mode === 'quick-join' ? 'block' : 'hidden');
+}
+
+function closeAuthModal(){
+    document.getElementById('authModal').classList.add('hidden');
+}
+
+async function joinFrictionless(){
     const serviceCode = document.getElementById('serviceCode').value.trim().toUpperCase();
-    const visitorName = document.getElementById('visitorName').value.trim();
+    const visitorName = document.getElementById('visitorName').value.trim().replace(/</g,"&lt;").replace(/>/g,"&gt;");
     const btn = document.getElementById('joinBtn');
 
-    if (!serviceCode || !visitorName) return showModal('Error', 'Please provide both your name and the service code.');
+    if(!serviceCode || !visitorName){
+        return showModal('Error','Please provide both your name and the service code.');
+    }
 
     btn.disabled = true;
-    btn.innerText = "VERIFYING...";
+    btn.textContent = "VERIFYING...";
 
     try {
-        const response = await fetch('/api/auth/join-frictionless', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        const response = await fetch('/api/auth/join-frictionless',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ service_code: serviceCode, name: visitorName })
         });
 
-        const data = await response.json().catch(() => ({ status: 'error', message: 'Invalid server response.' }));
+        const data = await response.json();
 
-        if (data.status === 'success') {
+        if(data.status === 'success'){
             localStorage.setItem('active_ticket_id', data.ticket_id);
             localStorage.setItem('visitor_name', visitorName);
             localStorage.setItem('org_name', data.organization_name);
-
-            showModal('Success!', `You joined the queue for ${data.organization_name}.`, true);
-            setTimeout(() => { window.location.href = '/status'; }, 2000);
+            showModal('Success!', `You have successfully joined the queue for ${data.organization_name}.`, true);
+            setTimeout(()=>{ window.location.href='/status'; },2000);
         } else {
-            showModal('Invalid Code', data.message || 'Service code not found.');
+            showModal('Invalid Code','The service code you entered does not exist in our system. Please check with the administrator.');
             btn.disabled = false;
-            btn.innerText = "VERIFY & JOIN QUEUE";
+            btn.textContent = "VERIFY & JOIN QUEUE";
         }
-    } catch {
-        showModal('System Error', 'Unable to connect. Please try again.');
+    } catch(error){
+        showModal('System Error','Unable to connect to Supabase. Check your internet connection.');
         btn.disabled = false;
-        btn.innerText = "VERIFY & JOIN QUEUE";
+        btn.textContent = "VERIFY & JOIN QUEUE";
     }
 }
 </script>
