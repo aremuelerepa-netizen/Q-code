@@ -22,15 +22,15 @@ def status_page():
 @app.route('/dashboard')
 def admin_dashboard():
     # Keep this if you have a separate admin/business view
-    return render_template('dashboard.html')
+    return render_template('Admin page.html')
 
 @app.route('/login')
 def login_page():
-    return render_template('login.html')
+    return render_template('login page.html')
 
 @app.route('/userpage')
 def userpage():
-    return render_template('userpage.html')
+    return render_template('Userpage.html')
 
 # --- API: AUTH & PERSONAL ACCOUNTS ---
 
@@ -149,3 +149,4 @@ def complete_session():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
