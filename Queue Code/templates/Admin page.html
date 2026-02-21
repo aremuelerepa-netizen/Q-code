@@ -49,6 +49,7 @@
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
 
         .chip { background: rgba(34, 211, 238, 0.1); padding: 8px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; margin: 4px; border: 1px solid rgba(34, 211, 238, 0.2); color: var(--accent-cyan); font-size: 0.8rem; }
+        .chip button { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
         
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -65,6 +66,7 @@
             <div class="nav-item active" onclick="switchTab('monitor', this)"><i data-lucide="monitor"></i> Monitor</div>
             <div class="nav-item" onclick="switchTab('create', this)"><i data-lucide="plus-square"></i> Create Service</div>
             <div class="nav-item" onclick="switchTab('services', this)"><i data-lucide="layout-grid"></i> My Services</div>
+            <div class="nav-item" onclick="switchTab('history', this)"><i data-lucide="bar-chart-3"></i> Intelligence</div>
             <div class="nav-item" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</div>
         </nav>
     </aside>
@@ -113,6 +115,33 @@
         <section id="services" class="view-section">
             <div id="services-list"></div>
         </section>
+
+        <section id="history" class="view-section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="color: var(--accent-cyan);">Attendance Intelligence</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Daily record of completed service sessions.</p>
+                    </div>
+                    <button class="btn btn-outline" onclick="loadDailyReport()">
+                        <i data-lucide="refresh-cw" size="16"></i> Refresh
+                    </button>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; color: var(--text-main);">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 1px solid var(--border); color: var(--accent-cyan); font-size: 0.75rem; text-transform: uppercase;">
+                            <th style="padding: 15px;">Visitor Name</th>
+                            <th style="padding: 15px;">Service Node</th>
+                            <th style="padding: 15px;">Entry Time</th>
+                            <th style="padding: 15px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 
     <script>
@@ -129,6 +158,7 @@
             document.getElementById('page-title').innerText = element.innerText;
 
             if(tabId === 'services') loadServices();
+            if(tabId === 'history') loadDailyReport();
         }
 
         // Clock logic
@@ -145,13 +175,22 @@
             document.getElementById('inp-staff-name').value = '';
         }
 
+        function removeStaff(index) {
+            staffList.splice(index, 1);
+            renderStaff();
+        }
+
         function renderStaff() {
-            document.getElementById('staff-chips').innerHTML = staffList.map(s => `<span class="chip">${s}</span>`).join('');
+            document.getElementById('staff-chips').innerHTML = staffList.map((s, idx) => `
+                <span class="chip">${s} <button onclick="removeStaff(${idx})">&times;</button></span>
+            `).join('');
         }
 
         // API: Create Service
         async function publishService() {
             const name = document.getElementById('inp-service-name').value;
+            if(!name) return alert("Please enter a service name");
+            
             const res = await fetch('/api/services/create', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -168,7 +207,7 @@
             }
         }
 
-        // API: Load Services
+        // API: Load My Services
         async function loadServices() {
             const res = await fetch('/api/services/list');
             const data = await res.json();
@@ -182,6 +221,37 @@
                     <div class="chip">ACTIVE</div>
                 </div>
             `).join('');
+        }
+
+        // API: Load Daily Attendance Report
+        async function loadDailyReport() {
+            const tbody = document.getElementById('report-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center;">Loading records...</td></tr>';
+
+            try {
+                const res = await fetch('/api/reports/daily');
+                const logs = await res.json();
+
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:var(--text-muted);">No attendance records for today.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = logs.map(log => `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem;">
+                        <td style="padding: 15px; font-weight: 600;">${log.visitor_name || 'Guest'}</td>
+                        <td style="padding: 15px;">${log.service_name}</td>
+                        <td style="padding: 15px; color: var(--text-muted);">${new Date(log.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                        <td style="padding: 15px;">
+                            <span style="background: rgba(34, 211, 238, 0.1); color: var(--accent-cyan); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">
+                                COMPLETED
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center; color:var(--danger);">Error loading report data.</td></tr>';
+            }
         }
 
         function handleLogout() {
