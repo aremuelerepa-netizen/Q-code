@@ -1,156 +1,150 @@
-import os
-import random
-import string
-import requests
-from datetime import timedelta
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-from flask_mail import Mail, Message
-from supabase import create_client, Client
-from groq import Groq
-from dotenv import load_dotenv
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-CODE | Smart Queueing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .cyan-glow { box-shadow: 0 0 20px rgba(34, 211, 238, 0.3); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
 
-load_dotenv()
-
-base_dir = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, 
-            template_folder=os.path.join(base_dir, 'templates'),
-            static_folder=os.path.join(base_dir, 'static'))
-
-app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_secure_v2")
-app.permanent_session_lifetime = timedelta(days=7)
-
-# --- 1. INITIALIZE CLIENTS ---
-db: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-# Mail Config
-app.config.update(
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=465,
-    MAIL_USERNAME=os.getenv("GMAIL_USER"),
-    MAIL_PASSWORD=os.getenv("GMAIL_APP_PASSWORD"),
-    MAIL_USE_SSL=True,
-    MAIL_DEFAULT_SENDER=os.getenv("GMAIL_USER")
-)
-mail = Mail(app)
-
-# --- 2. HELPER FUNCTIONS ---
-def generate_unique_code():
-    return 'QC-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-
-# --- 3. PAGE ROUTES ---
-@app.route('/')
-def home(): return render_template('index.html')
-
-@app.route('/login')
-def login_view(): return render_template('login page.html')
-
-@app.route('/super-admin')
-def super_admin_view():
-    if not session.get('is_super_admin'): return redirect(url_for('login_view'))
-    res = db.table("organizations").select("*").eq("verified", False).execute()
-    return render_template('super_admin.html', pending_orgs=res.data)
-
-# --- 4. USER AUTH (EMAIL OTP & LOGIN CODE) ---
-
-@app.route('/api/auth/request-email-otp', methods=['POST'])
-def request_email_otp():
-    email = request.json.get('email')
-    otp = str(random.randint(100000, 999999))
-    session['temp_otp'] = otp
-    session['temp_email'] = email
-    
-    try:
-        msg = Message("Q-CODE Verification", recipients=[email])
-        msg.body = f"Your one-time verification code is: {otp}"
-        mail.send(msg)
-        return jsonify({"status": "sent"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/auth/verify-email-otp', methods=['POST'])
-def verify_email_otp():
-    user_otp = request.json.get('otp')
-    phone = request.json.get('phone')
-    
-    if user_otp == session.get('temp_otp'):
-        email = session.get('temp_email')
-        login_code = generate_unique_code()
+    <div class="text-center space-y-6 max-w-2xl">
+        <div class="flex justify-center gap-3 items-center mb-4">
+            <div class="p-3 bg-cyan-500 rounded-2xl cyan-glow">
+                <i data-lucide="zap" class="text-white"></i>
+            </div>
+            <h1 class="text-4xl font-black tracking-tighter">Q-CODE</h1>
+        </div>
+        <h2 class="text-5xl md:text-6xl font-extrabold leading-tight">Skip the wait, <span class="text-cyan-400">Join from anywhere.</span></h2>
+        <p class="text-slate-400 text-lg">Scan a code or join via your email to secure your spot in line.</p>
         
-        # Save user and their unique login code to the DB
-        # This links the email and phone to this persistent code
-        db.table("queue").upsert({
-            "email": email,
-            "phone": phone,
-            "login_code": login_code,
-            "visitor_name": email.split('@')[0]
-        }, on_conflict="phone").execute()
-        
-        session['user_phone'] = phone
-        return jsonify({
-            "status": "success", 
-            "login_code": login_code,
-            "message": "Verify once, use your Login Code next time!"
-        })
-    return jsonify({"status": "invalid"}), 401
+        <div class="flex flex-col md:flex-row gap-4 justify-center pt-8">
+            <button onclick="openModal('join')" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold rounded-2xl transition-all transform hover:scale-105">
+                Join a Queue
+            </button>
+            <button onclick="openModal('login')" class="px-8 py-4 glass hover:bg-slate-800 font-bold rounded-2xl transition-all">
+                I have a Login Code
+            </button>
+        </div>
+    </div>
 
-@app.route('/api/auth/login-with-code', methods=['POST'])
-def login_with_code():
-    code = request.json.get('login_code').strip().upper()
-    res = db.table("queue").select("*").eq("login_code", code).execute()
-    
-    if res.data:
-        user = res.data[0]
-        session['user_phone'] = user['phone']
-        return jsonify({"status": "success", "user": user})
-    return jsonify({"status": "error", "message": "Invalid Login Code"}), 401
+    <div id="authModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="glass w-full max-w-md rounded-3xl p-8 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white">
+                <i data-lucide="x"></i>
+            </button>
 
-# --- 5. SIM-BASED SMS GATEWAY WEBHOOK ---
-@app.route('/api/sms/incoming', methods=['POST'])
-def sim_webhook():
-    # This endpoint is hit by your Android SMS Gateway App
-    data = request.json 
-    sender_phone = data.get('from') # The phone number texting your SIM
-    service_code = data.get('message', '').strip().upper() # e.g. "ZENITH01"
+            <div id="emailSection" class="space-y-6">
+                <h3 class="text-2xl font-bold">Verify your Email</h3>
+                <p class="text-slate-400 text-sm">We'll send a code to verify you and generate your Login Code.</p>
+                <input type="email" id="userEmail" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl focus:border-cyan-500 outline-none" placeholder="Email Address">
+                <input type="tel" id="userPhone" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl focus:border-cyan-500 outline-none" placeholder="Phone (e.g. 23480...)">
+                <button onclick="requestOTP()" id="otpBtn" class="w-full py-4 bg-cyan-500 text-slate-900 font-bold rounded-xl">Send OTP</button>
+                <p class="text-center text-xs text-slate-500">New here? You'll get your Login Code after this.</p>
+            </div>
 
-    # Check if the service code exists (using Org ID or a Service ID)
-    res = db.table("organizations").select("name").eq("id", service_code).execute()
-    
-    if res.data:
-        org_name = res.data[0]['name']
-        db.table("queue").insert({
-            "phone": sender_phone,
-            "service_id": service_code,
-            "entry_type": "SIM",
-            "visitor_name": "Offline User"
-        }).execute()
-        reply = f"Q-CODE: Success! You are in the queue for {org_name}. Use your phone number to track online."
-    else:
-        reply = "Q-CODE: Error. Invalid Service Code. Please check the code at the desk."
+            <div id="codeSection" class="hidden space-y-6">
+                <h3 class="text-2xl font-bold">Quick Login</h3>
+                <p class="text-slate-400 text-sm">Enter your 8-digit Q-CODE to access your dashboard.</p>
+                <input type="text" id="loginCodeInput" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl focus:border-cyan-500 outline-none text-center text-2xl font-mono tracking-widest" placeholder="QC-XXXX-XXXX">
+                <button onclick="loginWithCode()" class="w-full py-4 bg-cyan-500 text-slate-900 font-bold rounded-xl">Access Dashboard</button>
+                <button onclick="toggleMode('join')" class="w-full text-cyan-400 text-sm font-bold">Wait, I need to verify email</button>
+            </div>
 
-    # Return reply to the Android App so it sends the SMS back via your SIM
-    return jsonify({"to": sender_phone, "message": reply})
+            <div id="verifySection" class="hidden space-y-6 text-center">
+                <h3 class="text-2xl font-bold">Enter OTP</h3>
+                <div class="flex justify-center gap-2">
+                    <input type="text" maxlength="6" id="otpValue" class="w-32 bg-slate-900 border border-slate-700 p-4 rounded-xl text-center text-2xl tracking-tighter" placeholder="000000">
+                </div>
+                <button onclick="verifyOTP()" class="w-full py-4 bg-green-500 text-white font-bold rounded-xl">Verify & Generate Code</button>
+            </div>
 
-# --- 6. AI LOGIC (GROQ) ---
-@app.route('/api/ai-chat', methods=['POST'])
-def ai_chat():
-    user_msg = request.json.get("message")
-    try:
-        completion = groq_client.chat.completions.create(
-            messages=[{"role": "user", "content": user_msg}],
-            model="llama3-8b-8192",
-        )
-        return jsonify({"reply": completion.choices[0].message.content})
-    except Exception as e:
-        return jsonify({"reply": "AI is resting. Try again later."}), 500
+            <div id="successSection" class="hidden space-y-6 text-center">
+                <div class="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto">
+                    <i data-lucide="check" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-2xl font-bold">Verification Successful!</h3>
+                <p class="text-slate-400">Save this code! Use it to log in next time without email.</p>
+                <div id="finalLoginCode" class="p-4 bg-slate-900 border-2 border-dashed border-cyan-500 rounded-xl text-2xl font-mono font-bold text-cyan-400">---</div>
+                <button onclick="window.location.href='/status'" class="w-full py-4 bg-cyan-500 text-slate-900 font-bold rounded-xl">Go to My Queue</button>
+            </div>
+        </div>
+    </div>
 
-# --- 7. SUPER ADMIN & ORG ACTIONS ---
-@app.route('/api/admin/approve-org/<org_id>', methods=['POST'])
-def approve_org(org_id):
-    if not session.get('is_super_admin'): return jsonify({"status": "unauthorized"}), 403
-    db.table("organizations").update({"verified": True}).eq("id", org_id).execute()
-    return jsonify({"status": "success"})
+    <script>
+        lucide.createIcons();
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+        function openModal(mode) {
+            document.getElementById('authModal').classList.remove('hidden');
+            toggleMode(mode);
+        }
+
+        function closeModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function toggleMode(mode) {
+            document.getElementById('emailSection').classList.toggle('hidden', mode === 'login');
+            document.getElementById('codeSection').classList.toggle('hidden', mode === 'join');
+            document.getElementById('verifySection').classList.add('hidden');
+            document.getElementById('successSection').classList.add('hidden');
+        }
+
+        async function requestOTP() {
+            const email = document.getElementById('userEmail').value;
+            if(!email) return alert("Enter email!");
+            
+            document.getElementById('otpBtn').innerText = "Sending...";
+            const res = await fetch('/api/auth/request-email-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email })
+            });
+            if(res.ok) {
+                document.getElementById('emailSection').classList.add('hidden');
+                document.getElementById('verifySection').classList.remove('hidden');
+            }
+        }
+
+        async function verifyOTP() {
+            const otp = document.getElementById('otpValue').value;
+            const phone = document.getElementById('userPhone').value;
+            
+            const res = await fetch('/api/auth/verify-email-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ otp, phone })
+            });
+            const data = await res.json();
+            if(data.status === 'success') {
+                document.getElementById('verifySection').classList.add('hidden');
+                document.getElementById('successSection').classList.remove('hidden');
+                document.getElementById('finalLoginCode').innerText = data.login_code;
+            } else {
+                alert("Invalid OTP");
+            }
+        }
+
+        async function loginWithCode() {
+            const code = document.getElementById('loginCodeInput').value;
+            const res = await fetch('/api/auth/login-with-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ login_code: code })
+            });
+            if(res.ok) {
+                window.location.href = '/status';
+            } else {
+                alert("Invalid or expired Login Code.");
+            }
+        }
+    </script>
+</body>
+</html>
