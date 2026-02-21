@@ -239,9 +239,77 @@ def reject_org(org_id):
     if not session.get('is_super_admin'): return jsonify({"status": "error"}), 403
     db.table("organizations").delete().eq("id", org_id).execute()
     return jsonify({"status": "success"})
+
+# --- PERSONAL ACCOUNT SYSTEM ---
+
+@app.route('/api/auth/user-register', methods=['POST'])
+def user_register():
+    """Converts a Guest Session into a Personal Account or creates a new one."""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password') # Note: Use werkzeug.security.generate_password_hash for production
+    
+    if not email or not password:
+        return jsonify({"status": "error", "message": "Email and Password required"}), 400
+
+    try:
+        # Check if user is currently in a frictionless session
+        if 'user_id' in session:
+            # UPGRADE EXISTING SESSION: Add email/pass to the current queue row
+            db.table("queue").update({
+                "email": email,
+                "password": password,
+                "is_member": True,
+                "entry_type": "PERSONAL_ACCT"
+            }).eq("id", session['user_id']).execute()
             
+            message = "Guest session upgraded to Personal Account!"
+        else:
+            # CREATE NEW ACCOUNT: User is registering without being in a queue
+            db.table("queue").insert({
+                "email": email,
+                "password": password,
+                "is_member": True,
+                "visitor_name": email.split('@')[0],
+                "login_code": generate_unique_code(),
+                "entry_type": "PERSONAL_ACCT"
+            }).execute()
+            message = "Account created successfully!"
+
+        return jsonify({"status": "success", "message": message})
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/auth/user-login', methods=['POST'])
+def user_login():
+    """Login for Personal Account users."""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    try:
+        # Search for a member with this email and password
+        res = db.table("queue").select("*").eq("email", email).eq("password", password).eq("is_member", True).execute()
+        
+        if res.data:
+            user = res.data[0]
+            session.clear()
+            session.permanent = True
+            session['user_id'] = user['id']
+            session['user_email'] = user['email']
+            session['org_id'] = user.get('org_id') # Link to their current queue if active
+            
+            return jsonify({"status": "success", "redirect": "/userpage"})
+        
+        return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+                
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
 
