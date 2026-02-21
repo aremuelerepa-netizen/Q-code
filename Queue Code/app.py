@@ -242,31 +242,9 @@ def register():
     # }).execute()
 
     return jsonify({"status": "success", "message": "Application submitted for review"}), 201
-
-# --- LOGIN ROUTE (The Gatekeeper) ---
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-
-    # 1. Fetch user from DB
-    # user = supabase.table('businesses').select("*").eq("email", email).single().execute()
-    
-    # 2. Check if user exists and password is correct...
-    
-    # 3. CHECK THE GATEKEEPER FLAG
-    if user.data['status'] == 'pending':
-        return jsonify({
-            "status": "error", 
-            "message": "Your account is awaiting manual verification by the admin."
-        }), 401 # Unauthorized
-
-    if user.data['status'] == 'active':
-        # Proceed with login/session creation
-        return jsonify({"status": "success", "redirect": "/dashboard"}), 200
             
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
+
 
 
