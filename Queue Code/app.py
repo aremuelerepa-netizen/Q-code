@@ -20,16 +20,18 @@ app.secret_key = os.getenv("FLASK_SECRET", "qcode_2026_secure_v2")
 app.permanent_session_lifetime = timedelta(days=7)
 
 # --- 1. INITIALIZE CLIENTS ---
+# Initialize DB once at the top to avoid reconnecting constantly
 db: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Mail Config
+# Mail Config - UPDATED TO TLS (PORT 587) TO PREVENT RENDER CRASHES
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=465,
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False,
     MAIL_USERNAME=os.getenv("GMAIL_USER"),
     MAIL_PASSWORD=os.getenv("GMAIL_APP_PASSWORD"),
-    MAIL_USE_SSL=True,
     MAIL_DEFAULT_SENDER=os.getenv("GMAIL_USER")
 )
 mail = Mail(app)
@@ -45,14 +47,52 @@ def home(): return render_template('index.html')
 @app.route('/login')
 def login_view(): return render_template('login page.html')
 
+@app.route('/register')
+def reg_view(): return render_template('org reg page.html')
+
 @app.route('/super-admin')
 def super_admin_view():
-    if not session.get('is_super_admin'): return redirect(url_for('login_view'))
+    # Only allow if the session says they are super admin
+    if not session.get('is_super_admin'): 
+        return redirect(url_for('login_view'))
     res = db.table("organizations").select("*").eq("verified", False).execute()
     return render_template('super_admin.html', pending_orgs=res.data)
 
-# --- 4. USER AUTH (EMAIL OTP & LOGIN CODE) ---
+@app.route('/admin')
+def admin_dashboard():
+    if 'org_id' not in session: return redirect(url_for('login_view'))
+    return render_template('Admin page.html')
 
+# --- 4. ADMIN & ORG LOGIN LOGIC (FIXED: This was missing!) ---
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.json or {}
+    email = data.get('email')
+    password = data.get('password')
+
+    # 1. Check Super Admin (From .env)
+    if email == os.getenv("ADMIN_EMAIL") and password == os.getenv("ADMIN_PASSWORD"):
+        session.clear()
+        session.permanent = True
+        session['is_super_admin'] = True
+        return jsonify({"status": "success", "redirect": "/super-admin"})
+
+    # 2. Check Regular Organization
+    res = db.table("organizations").select("*").eq("email", email).execute()
+    if res.data and res.data[0]['password'] == password:
+        org = res.data[0]
+        if org['verified']:
+            session.update({
+                'org_id': str(org['id']), 
+                'org_name': org['name'], 
+                'is_super_admin': False
+            })
+            return jsonify({"status": "success", "redirect": "/admin"})
+        return jsonify({"status": "pending", "message": "Account awaiting verification"}), 403
+    
+    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
+
+# --- 5. USER AUTH (EMAIL OTP & LOGIN CODE) ---
 @app.route('/api/auth/request-email-otp', methods=['POST'])
 def request_email_otp():
     email = request.json.get('email')
@@ -66,72 +106,53 @@ def request_email_otp():
         mail.send(msg)
         return jsonify({"status": "sent"})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"MAIL ERROR: {e}")
+        return jsonify({"status": "error", "message": "Mail server failed. Check App Password."}), 500
 
 @app.route('/api/auth/verify-email-otp', methods=['POST'])
 def verify_email_otp():
     user_otp = request.json.get('otp')
-    phone = request.json.get('phone')
-    
     if user_otp == session.get('temp_otp'):
         email = session.get('temp_email')
         login_code = generate_unique_code()
         
-        # Save user and their unique login code to the DB
-        # This links the email and phone to this persistent code
+        # Upsert using email as the identifier now
         db.table("queue").upsert({
             "email": email,
-            "phone": phone,
             "login_code": login_code,
             "visitor_name": email.split('@')[0]
-        }, on_conflict="phone").execute()
+        }, on_conflict="email").execute()
         
-        session['user_phone'] = phone
-        return jsonify({
-            "status": "success", 
-            "login_code": login_code,
-            "message": "Verify once, use your Login Code next time!"
-        })
+        return jsonify({"status": "success", "login_code": login_code})
     return jsonify({"status": "invalid"}), 401
 
 @app.route('/api/auth/login-with-code', methods=['POST'])
 def login_with_code():
-    code = request.json.get('login_code').strip().upper()
+    code = request.json.get('login_code', '').strip().upper()
     res = db.table("queue").select("*").eq("login_code", code).execute()
     
     if res.data:
         user = res.data[0]
-        session['user_phone'] = user['phone']
+        session['user_email'] = user['email']
         return jsonify({"status": "success", "user": user})
     return jsonify({"status": "error", "message": "Invalid Login Code"}), 401
 
-# --- 5. SIM-BASED SMS GATEWAY WEBHOOK ---
+# --- 6. SIM GATEWAY & AI ---
 @app.route('/api/sms/incoming', methods=['POST'])
 def sim_webhook():
-    # This endpoint is hit by your Android SMS Gateway App
     data = request.json 
-    sender_phone = data.get('from') # The phone number texting your SIM
-    service_code = data.get('message', '').strip().upper() # e.g. "ZENITH01"
+    sender_phone = data.get('from')
+    service_code = data.get('message', '').strip().upper()
 
-    # Check if the service code exists (using Org ID or a Service ID)
     res = db.table("organizations").select("name").eq("id", service_code).execute()
-    
     if res.data:
         org_name = res.data[0]['name']
         db.table("queue").insert({
-            "phone": sender_phone,
-            "service_id": service_code,
-            "entry_type": "SIM",
-            "visitor_name": "Offline User"
+            "phone": sender_phone, "service_id": service_code, "entry_type": "SIM"
         }).execute()
-        reply = f"Q-CODE: Success! You are in the queue for {org_name}. Use your phone number to track online."
-    else:
-        reply = "Q-CODE: Error. Invalid Service Code. Please check the code at the desk."
+        return jsonify({"to": sender_phone, "message": f"Q-CODE: Added to {org_name} queue."})
+    return jsonify({"to": sender_phone, "message": "Q-CODE: Invalid Code."})
 
-    # Return reply to the Android App so it sends the SMS back via your SIM
-    return jsonify({"to": sender_phone, "message": reply})
-
-# --- 6. AI LOGIC (GROQ) ---
 @app.route('/api/ai-chat', methods=['POST'])
 def ai_chat():
     user_msg = request.json.get("message")
@@ -141,14 +162,20 @@ def ai_chat():
             model="llama3-8b-8192",
         )
         return jsonify({"reply": completion.choices[0].message.content})
-    except Exception as e:
-        return jsonify({"reply": "AI is resting. Try again later."}), 500
+    except:
+        return jsonify({"reply": "AI is offline."}), 500
 
-# --- 7. SUPER ADMIN & ORG ACTIONS ---
+# --- 7. ADMIN ACTIONS ---
 @app.route('/api/admin/approve-org/<org_id>', methods=['POST'])
 def approve_org(org_id):
     if not session.get('is_super_admin'): return jsonify({"status": "unauthorized"}), 403
     db.table("organizations").update({"verified": True}).eq("id", org_id).execute()
+    return jsonify({"status": "success"})
+
+@app.route('/api/admin/decline-org/<org_id>', methods=['POST'])
+def decline_org(org_id):
+    if not session.get('is_super_admin'): return jsonify({"status": "unauthorized"}), 403
+    db.table("organizations").delete().eq("id", org_id).execute()
     return jsonify({"status": "success"})
 
 if __name__ == '__main__':
