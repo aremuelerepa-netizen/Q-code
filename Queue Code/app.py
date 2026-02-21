@@ -79,7 +79,6 @@ def reg_view(): return render_template('org reg page.html')
 @app.route('/super-admin')
 def super_admin_view():
     if not session.get('is_super_admin'): return redirect(url_for('login_view'))
-    # Fetch organizations that are NOT yet verified
     res = db.table("organizations").select("*").eq("verified", False).execute()
     return render_template('super_admin.html', pending_orgs=res.data)
 
@@ -93,7 +92,6 @@ def admin_dashboard():
 
 @app.route('/api/admin/approve-org/<org_id>', methods=['POST'])
 def approve_org(org_id):
-    """Allows Super Admin to approve a pending organization."""
     if not session.get('is_super_admin'): return jsonify({"status": "error"}), 403
     try:
         db.table("organizations").update({"verified": True}).eq("id", org_id).execute()
@@ -125,25 +123,22 @@ def join_frictionless():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/auth/user-register', methods=['POST'])
-def user_register():
-    """Handles Personal Account Creation (Email/Password)."""
+@app.route('/api/auth/quick-upgrade', methods=['POST'])
+def quick_upgrade():
+    """Renamed from user_register to avoid conflict with the one below."""
     data = request.json
     email = data.get('email')
-    password = data.get('password') # In production, use hash (e.g. werkzeug.security)
+    password = data.get('password')
     
     try:
-        res = db.table("queue").insert({
+        db.table("queue").insert({
             "email": email, 
             "login_code": generate_unique_code(),
             "entry_type": "PERSONAL_ACCT",
-            "status": "active" # Placeholder for persistent accounts
+            "status": "active"
         }).execute()
         
-        # You could add a password column to the 'queue' table in SQL
-        # Or create a separate 'users' table. Assuming 'queue' for now:
-        db.table("queue").update({"phone": password}).eq("email", email).execute() # Using phone as temp pass field
-        
+        db.table("queue").update({"phone": password}).eq("email", email).execute()
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -209,12 +204,11 @@ def list_services():
     if 'org_id' not in session: return jsonify([]), 401
     res = db.table("services").select("*").eq("org_id", session['org_id']).execute()
     return jsonify(res.data)
-            
+
 # --- SUPER ADMIN ADVANCED ROUTES ---
 
 @app.route('/api/admin/stats')
 def get_platform_stats():
-    """Returns high-level numbers for the dashboard cards."""
     if not session.get('is_super_admin'): return jsonify({}), 403
     
     org_count = db.table("organizations").select("id", count='exact').execute().count
@@ -229,7 +223,6 @@ def get_platform_stats():
 
 @app.route('/api/admin/suspend-org/<org_id>', methods=['POST'])
 def suspend_org(org_id):
-    """Allows admin to temporarily disable a business account."""
     if not session.get('is_super_admin'): return jsonify({"status": "error"}), 403
     db.table("organizations").update({"verified": False}).eq("id", org_id).execute()
     return jsonify({"status": "success", "message": "Organization suspended"})
@@ -243,29 +236,25 @@ def reject_org(org_id):
 # --- PERSONAL ACCOUNT SYSTEM ---
 
 @app.route('/api/auth/user-register', methods=['POST'])
-def user_register():
-    """Converts a Guest Session into a Personal Account or creates a new one."""
+def user_register_api():
+    """Main Personal Account Creation route."""
     data = request.json
     email = data.get('email')
-    password = data.get('password') # Note: Use werkzeug.security.generate_password_hash for production
+    password = data.get('password')
     
     if not email or not password:
         return jsonify({"status": "error", "message": "Email and Password required"}), 400
 
     try:
-        # Check if user is currently in a frictionless session
         if 'user_id' in session:
-            # UPGRADE EXISTING SESSION: Add email/pass to the current queue row
             db.table("queue").update({
                 "email": email,
                 "password": password,
                 "is_member": True,
                 "entry_type": "PERSONAL_ACCT"
             }).eq("id", session['user_id']).execute()
-            
             message = "Guest session upgraded to Personal Account!"
         else:
-            # CREATE NEW ACCOUNT: User is registering without being in a queue
             db.table("queue").insert({
                 "email": email,
                 "password": password,
@@ -283,13 +272,11 @@ def user_register():
 
 @app.route('/api/auth/user-login', methods=['POST'])
 def user_login():
-    """Login for Personal Account users."""
     data = request.json
     email = data.get('email')
     password = data.get('password')
 
     try:
-        # Search for a member with this email and password
         res = db.table("queue").select("*").eq("email", email).eq("password", password).eq("is_member", True).execute()
         
         if res.data:
@@ -298,18 +285,13 @@ def user_login():
             session.permanent = True
             session['user_id'] = user['id']
             session['user_email'] = user['email']
-            session['org_id'] = user.get('org_id') # Link to their current queue if active
-            
+            session['org_id'] = user.get('org_id')
             return jsonify({"status": "success", "redirect": "/userpage"})
         
         return jsonify({"status": "error", "message": "Invalid email or password"}), 401
-
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-                
+                                
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
-
-
-
