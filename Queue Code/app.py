@@ -79,9 +79,13 @@ def reg_view(): return render_template('org reg page.html')
 
 @app.route('/admin')
 def admin_dashboard():
-    if 'org_id' not in session: return redirect(url_for('login_view'))
-    org_name = session.get('org_name', 'Organization')
-    return render_template('Admin page.html', org_name=org_name)
+    if 'org_id' not in session: 
+        return redirect(url_for('login_view'))
+    
+    # We pass the data here so the HTML can see it
+    return render_template('Admin page.html', 
+                           org_name=session.get('org_name', 'Organization'),
+                           admin_email=session.get('admin_email', 'Admin'))
 
 @app.route('/super-admin')
 def super_admin_view():
@@ -301,4 +305,5 @@ def verify_completion():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
