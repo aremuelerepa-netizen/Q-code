@@ -2,21 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Q-CODE | Premium Queue Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-CODE | Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; }
         .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .cartoon-float { animation: float 6s ease-in-out infinite; }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.3s ease; }
+        .btn-cyan:hover { opacity: 0.9; transform: translateY(-1px); }
+        .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .input-field:focus { border-color: #22d3ee; outline: none; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); }
     </style>
 </head>
-<body class="min-h-screen bg-[#0f172a]">
+<body class="min-h-screen flex items-center justify-center p-4">
 
     <div id="notifBox" class="fixed top-5 right-5 z-[200] max-w-sm w-full hidden">
         <div class="glass p-4 rounded-2xl border-l-4 border-cyan-400 flex items-center gap-3 shadow-2xl">
@@ -25,68 +25,55 @@
         </div>
     </div>
 
-    <nav class="fixed top-0 w-full z-50 px-4 py-4 flex items-center justify-between glass border-b border-white/5">
-        <div class="flex items-center gap-2">
-            <span class="text-lg font-black tracking-tighter uppercase italic">Q-CODE</span>
-            <div class="w-6 h-6 btn-cyan rounded-md flex items-center justify-center">
-                <i data-lucide="zap" class="w-3 h-3 text-white fill-current"></i>
+    <div class="glass w-full max-w-[400px] rounded-[32px] p-8 md:p-10 border-white/10 shadow-2xl">
+        <div class="flex flex-col items-center mb-8">
+            <div class="w-12 h-12 btn-cyan rounded-xl flex items-center justify-center mb-4">
+                <i data-lucide="zap" class="w-6 h-6 text-white fill-current"></i>
             </div>
-        </div>
-        <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider">Business Portal</a>
-    </nav>
-
-    <main class="relative pt-32 pb-12 px-4 flex flex-col items-center justify-center text-center min-h-screen">
-        <div class="cartoon-float mb-8">
-            <svg width="180" height="180" viewBox="0 0 200 200" fill="none">
-                <circle cx="100" cy="100" r="80" fill="#22d3ee" fill-opacity="0.1"/>
-                <path d="M70 140C70 140 85 110 100 110C115 110 130 140 130 140" stroke="#22d3ee" stroke-width="8" stroke-linecap="round"/>
-                <circle cx="100" cy="70" r="25" stroke="#22d3ee" stroke-width="8"/>
-            </svg>
+            <h2 id="formTitle" class="text-2xl font-black uppercase tracking-tight italic">Welcome Back</h2>
+            <p id="formSubtitle" class="text-slate-400 text-xs uppercase tracking-widest mt-2">Access your business portal</p>
         </div>
 
-        <h1 class="text-5xl md:text-7xl font-black mb-4">Wait Less, <br><span class="text-gradient">Live More.</span></h1>
-        
-        <button onclick="openAuthModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase mb-12 shadow-lg shadow-cyan-500/20">
-            Join a Queue Fast
-        </button>
-
-        <div class="glass p-6 rounded-3xl border-white/5 w-full max-w-sm">
-            <p class="text-slate-400 text-xs mb-4">Want history and AI alerts?</p>
-            <button onclick="openAuthModal('login')" class="text-cyan-400 text-[10px] font-black uppercase border border-cyan-400/30 px-6 py-2 rounded-full hover:bg-cyan-400/10 transition-all">
-                Use Personal Account
+        <div id="loginSection" class="space-y-4">
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Email Address</label>
+                <input type="email" id="loginEmail" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="name@company.com">
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Password</label>
+                <input type="password" id="loginPass" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="••••••••">
+            </div>
+            <button onclick="handleLogin()" id="loginBtn" class="btn-cyan w-full py-4 rounded-2xl text-slate-950 font-black uppercase text-xs tracking-widest mt-4">
+                Sign In
             </button>
+            <p class="text-center text-[10px] text-slate-500 font-bold uppercase mt-6">
+                Don't have an account? 
+                <span onclick="toggleView('register')" class="text-cyan-400 cursor-pointer hover:underline ml-1">Register</span>
+            </p>
         </div>
-    </main>
 
-    <div id="authModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4 z-[100]">
-        <div class="glass w-full max-w-[380px] rounded-[28px] p-8 relative border-white/10">
-            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white"><i data-lucide="x"></i></button>
-
-            <div id="quickJoinSection" class="space-y-6 pt-4 hidden">
-                <div class="text-center">
-                    <h3 class="text-xl font-black italic uppercase">Quick Join</h3>
-                    <p class="text-slate-400 text-[10px] uppercase tracking-widest">No account required</p>
-                </div>
-                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center uppercase font-bold text-cyan-400 focus:border-cyan-400 outline-none" placeholder="SERVICE CODE">
-                <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center focus:border-cyan-400 outline-none" placeholder="YOUR NAME">
-                <button id="joinBtn" onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px] tracking-widest">Secure Spot</button>
+        <div id="registerSection" class="space-y-4 hidden">
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Email Address</label>
+                <input type="email" id="regEmail" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="name@company.com">
             </div>
-
-            <div id="loginSection" class="space-y-4 pt-4 hidden">
-                <h3 class="text-xl font-black text-center uppercase italic">Welcome Back</h3>
-                <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Email">
-                <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Password">
-                <button onclick="loginUser()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Sign In</button>
-                <p class="text-center text-[10px] text-slate-500 font-bold uppercase">New? <span onclick="toggleAuthSections('register')" class="text-cyan-400 cursor-pointer">Create Account</span></p>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Create Password</label>
+                <input type="password" id="regPass" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="Min. 8 characters">
             </div>
-
-            <div id="registerSection" class="space-y-4 pt-4 hidden">
-                <h3 class="text-xl font-black text-center uppercase italic">Create Vault</h3>
-                <input type="email" id="regEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Email Address">
-                <input type="password" id="regPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Create Password">
-                <button onclick="registerPersonalAccount()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Register</button>
-                <p class="text-center text-[10px] text-slate-500 font-bold uppercase">Already have one? <span onclick="toggleAuthSections('login')" class="text-cyan-400 cursor-pointer">Login</span></p>
-            </div>
+            <button onclick="handleRegister()" id="regBtn" class="btn-cyan w-full py-4 rounded-2xl text-slate-950 font-black uppercase text-xs tracking-widest mt-4">
+                Create Account
+            </button>
+            <p class="text-center text-[10px] text-slate-500 font-bold uppercase mt-6">
+                Already registered? 
+                <span onclick="toggleView('login')" class="text-cyan-400 cursor-pointer hover:underline ml-1">Login</span>
+            </p>
+        </div>
+        
+        <div class="mt-8 pt-6 border-t border-white/5 text-center">
+            <a href="/" class="text-[10px] font-bold text-slate-500 uppercase hover:text-white transition-colors">
+                ← Back to Home
+            </a>
         </div>
     </div>
 
@@ -97,88 +84,92 @@
             const box = document.getElementById('notifBox');
             document.getElementById('notifMessage').innerText = msg;
             box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 3000);
+            setTimeout(() => box.classList.add('hidden'), 4000);
         }
 
-        function openAuthModal(mode) {
-            document.getElementById('authModal').classList.remove('hidden');
-            toggleAuthSections(mode);
-        }
+        function toggleView(view) {
+            const loginSection = document.getElementById('loginSection');
+            const registerSection = document.getElementById('registerSection');
+            const title = document.getElementById('formTitle');
+            const subtitle = document.getElementById('formSubtitle');
 
-        function closeAuthModal() { 
-            document.getElementById('authModal').classList.add('hidden'); 
-        }
-
-        function toggleAuthSections(mode) {
-            const sections = ['quickJoinSection', 'loginSection', 'registerSection'];
-            sections.forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById(mode + 'Section').classList.remove('hidden');
-        }
-
-        async function joinFrictionless() {
-            const service_code = document.getElementById('serviceCode').value.trim();
-            const name = document.getElementById('visitorName').value.trim();
-            const btn = document.getElementById('joinBtn');
-
-            if(!service_code || !name) return notify("Please fill all fields");
-
-            btn.disabled = true;
-            btn.innerText = "WAITING...";
-
-            try {
-                const res = await fetch('/api/auth/join-frictionless', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ service_code, name })
-                });
-                
-                const data = await res.json();
-                
-                if(data.status === 'success') {
-                    // Save to local storage for the status page to read
-                    localStorage.setItem('active_ticket_id', data.ticket_id);
-                    localStorage.setItem('org_name', data.organization_name);
-                    
-                    notify("Success! Redirecting...");
-                    // Redirect to the status route
-                    setTimeout(() => { window.location.href = '/status'; }, 1000);
-                } else {
-                    notify(data.message || "Invalid Code");
-                    btn.disabled = false;
-                    btn.innerText = "SECURE SPOT";
-                }
-            } catch (err) {
-                notify("Server Error. Try again.");
-                btn.disabled = false;
-                btn.innerText = "SECURE SPOT";
+            if (view === 'register') {
+                loginSection.classList.add('hidden');
+                registerSection.classList.remove('hidden');
+                title.innerText = "Create Vault";
+                subtitle.innerText = "Start managing your queue";
+            } else {
+                registerSection.classList.add('hidden');
+                loginSection.classList.remove('hidden');
+                title.innerText = "Welcome Back";
+                subtitle.innerText = "Access your business portal";
             }
         }
 
-        // Logic for Login/Register stays the same
-        async function loginUser() {
+        async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
-            const res = await fetch('/api/auth/user-login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if(data.status === 'success') window.location.href = '/userpage';
-            else notify(data.message);
+            const btn = document.getElementById('loginBtn');
+
+            if (!email || !password) return notify("Fields cannot be empty");
+
+            btn.disabled = true;
+            btn.innerText = "AUTHENTICATING...";
+
+            try {
+                const res = await fetch('/api/auth/user-login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    // Save token if needed for Supabase RLS
+                    localStorage.setItem('sb_token', data.session);
+                    window.location.href = '/userpage';
+                } else {
+                    notify(data.message);
+                    btn.disabled = false;
+                    btn.innerText = "SIGN IN";
+                }
+            } catch (err) {
+                notify("Connection Error");
+                btn.disabled = false;
+                btn.innerText = "SIGN IN";
+            }
         }
 
-        async function registerPersonalAccount() {
+        async function handleRegister() {
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPass').value;
-            const res = await fetch('/api/auth/user-register', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if(data.status === 'success') notify("Check your email for confirmation!");
-            else notify(data.message);
+            const btn = document.getElementById('regBtn');
+
+            if (!email || !password) return notify("Fields cannot be empty");
+
+            btn.disabled = true;
+            btn.innerText = "CREATING...";
+
+            try {
+                const res = await fetch('/api/auth/user-register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    notify("Account created! Check your email to confirm.");
+                    setTimeout(() => toggleView('login'), 2000);
+                } else {
+                    notify(data.message);
+                }
+            } catch (err) {
+                notify("Registration failed");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "CREATE ACCOUNT";
+            }
         }
     </script>
 </body>
