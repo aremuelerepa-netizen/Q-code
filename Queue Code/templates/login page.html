@@ -16,146 +16,37 @@
             --card-glass: rgba(30, 41, 59, 0.4);
             --border: rgba(255, 255, 255, 0.1);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-dark); height: 100vh; display: flex; align-items: center; justify-content: center; color: var(--text-main); position: relative; overflow: hidden; }
 
-        body {
-            background: var(--bg-dark);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-main);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Back to Home Button */
-        .back-home {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: 0.3s;
-            z-index: 100;
-        }
+        .back-home { position: absolute; top: 30px; left: 30px; display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: 0.3s; z-index: 100; }
         .back-home:hover { color: var(--accent-cyan); }
 
-        .bg-glow {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, rgba(2, 6, 23, 0) 70%);
-            border-radius: 50%;
-            z-index: -1;
-            filter: blur(60px);
-        }
+        .bg-glow { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, rgba(2, 6, 23, 0) 70%); border-radius: 50%; z-index: -1; filter: blur(60px); }
 
-        .login-card {
-            background: var(--card-glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            width: 90%;
-            max-width: 420px;
-            padding: 50px 40px;
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            z-index: 10;
-        }
+        .login-card { background: var(--card-glass); backdrop-filter: blur(20px); border: 1px solid var(--border); width: 90%; max-width: 420px; padding: 50px 40px; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); text-align: center; z-index: 10; }
 
-        .logo-area {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            border-radius: 16px;
-            margin-bottom: 24px;
-            color: var(--bg-dark);
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.4);
-        }
+        .logo-area { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border-radius: 16px; margin-bottom: 24px; color: var(--bg-dark); box-shadow: 0 0 20px rgba(34, 211, 238, 0.4); }
 
         h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
         p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 35px; }
+
         .form-group { text-align: left; margin-bottom: 20px; }
-        
-        label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
+        label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        input { width: 100%; padding: 14px 18px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 1rem; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--accent-cyan); background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1); }
 
-        input {
-            width: 100%;
-            padding: 14px 18px;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            outline: none;
-            transition: 0.3s;
-        }
+        .btn-login { width: 100%; padding: 16px; margin-top: 10px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border: none; border-radius: 12px; color: var(--bg-dark); font-weight: 800; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
+        .btn-login:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(34, 211, 238, 0.3); }
+        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; }
 
-        input:focus {
-            border-color: var(--accent-cyan);
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1);
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            margin-top: 10px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            border: none;
-            border-radius: 12px;
-            color: var(--bg-dark);
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-login:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(34, 211, 238, 0.3);
-        }
-
-        .btn-login:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .footer-links {
-            margin-top: 25px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
+        .footer-links { margin-top: 25px; font-size: 0.85rem; color: var(--text-muted); }
         .footer-links a { color: var(--accent-cyan); text-decoration: none; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <a href="/" class="back-home"><i data-lucide="chevron-left"></i> BACK TO HOME</a>
-
     <div class="bg-glow" style="top: -100px; left: -100px;"></div>
     <div class="bg-glow" style="bottom: -100px; right: -100px;"></div>
 
@@ -169,12 +60,12 @@
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">Admin Email</label>
-                <input type="email" id="email" placeholder="admin@company.com" required>
+                <input type="email" id="email" placeholder="admin@company.com" required autocomplete="email">
             </div>
 
             <div class="form-group">
                 <label for="password">Access Key</label>
-                <input type="password" id="password" placeholder="••••••••" required>
+                <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
             </div>
 
             <button type="submit" class="btn-login" id="submitBtn">
@@ -195,12 +86,11 @@
 
         loginForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<span>VERIFYING...</span>`;
 
-            const formData = {
-                email: document.getElementById('email').value,
+            const payload = {
+                email: document.getElementById('email').value.trim(),
                 password: document.getElementById('password').value
             };
 
@@ -208,29 +98,25 @@
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
 
-                if (response.ok) {
-                    // Success (Owner or Verified Org)
-                    window.location.href = result.redirect; 
+                if (response.ok && result.redirect) {
+                    window.location.href = result.redirect;
                 } else if (response.status === 403) {
-                    // Scenario: Pending verification
-                    alert("ACCESS DENIED: Your account is still being reviewed by our team. You will receive an email/SMS once verified.");
+                    alert("ACCESS DENIED: Your account is still being reviewed. Check email/SMS for updates.");
                     resetButton();
                 } else if (response.status === 404) {
-                    // Scenario: Not in database
-                    alert("USER NOT FOUND: This email is not registered with Q-Code. Please register your organization first.");
+                    alert("USER NOT FOUND: Please register your organization first.");
                     resetButton();
                 } else {
-                    // Scenario: Wrong password
                     alert(result.message || "Invalid credentials.");
                     resetButton();
                 }
-            } catch (error) {
-                alert("Server Connection Error. Please try again later.");
+            } catch (err) {
+                alert("Server connection error. Please try again.");
                 resetButton();
             }
         });
@@ -238,7 +124,6 @@
         function resetButton() {
             submitBtn.disabled = false;
             submitBtn.innerHTML = `<span>SECURE LOGIN</span> <i data-lucide="arrow-right"></i>`;
-            lucide.createIcons();
         }
     </script>
 </body>
