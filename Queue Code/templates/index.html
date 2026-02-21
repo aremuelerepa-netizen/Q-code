@@ -14,7 +14,6 @@
         .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .cartoon-float { animation: float 6s ease-in-out infinite; }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
-        .btn-google { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="min-h-screen bg-[#0f172a]">
@@ -47,13 +46,13 @@
 
         <h1 class="text-5xl md:text-7xl font-black mb-4">Wait Less, <br><span class="text-gradient">Live More.</span></h1>
         
-        <button onclick="openModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase mb-12">
+        <button onclick="openAuthModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase mb-12 shadow-lg shadow-cyan-500/20">
             Join a Queue Fast
         </button>
 
         <div class="glass p-6 rounded-3xl border-white/5 w-full max-w-sm">
             <p class="text-slate-400 text-xs mb-4">Want history and AI alerts?</p>
-            <button onclick="openModal('login')" class="text-cyan-400 text-[10px] font-black uppercase border border-cyan-400/30 px-6 py-2 rounded-full hover:bg-cyan-400/10">
+            <button onclick="openAuthModal('login')" class="text-cyan-400 text-[10px] font-black uppercase border border-cyan-400/30 px-6 py-2 rounded-full hover:bg-cyan-400/10 transition-all">
                 Use Personal Account
             </button>
         </div>
@@ -61,69 +60,101 @@
 
     <div id="authModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4 z-[100]">
         <div class="glass w-full max-w-[380px] rounded-[28px] p-8 relative border-white/10">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500"><i data-lucide="x"></i></button>
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white"><i data-lucide="x"></i></button>
 
             <div id="quickJoinSection" class="space-y-6 pt-4 hidden">
-                <h3 class="text-xl font-black text-center uppercase">Quick Join</h3>
-                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center uppercase font-bold" placeholder="SERVICE CODE">
-                <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center" placeholder="YOUR NAME">
-                <button onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Secure Spot</button>
+                <div class="text-center">
+                    <h3 class="text-xl font-black italic uppercase">Quick Join</h3>
+                    <p class="text-slate-400 text-[10px] uppercase tracking-widest">No account required</p>
+                </div>
+                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center uppercase font-bold text-cyan-400 focus:border-cyan-400 outline-none" placeholder="SERVICE CODE">
+                <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center focus:border-cyan-400 outline-none" placeholder="YOUR NAME">
+                <button id="joinBtn" onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px] tracking-widest">Secure Spot</button>
             </div>
 
             <div id="loginSection" class="space-y-4 pt-4 hidden">
-                <h3 class="text-xl font-black text-center uppercase">Welcome Back</h3>
-                <button class="btn-google w-full py-3 rounded-xl flex items-center justify-center gap-3 text-xs font-bold uppercase">
-                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-4 h-4"> Google Login
-                </button>
-                <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Email">
-                <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Password">
+                <h3 class="text-xl font-black text-center uppercase italic">Welcome Back</h3>
+                <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Email">
+                <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Password">
                 <button onclick="loginUser()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Sign In</button>
-                <p class="text-center text-[10px] text-slate-500 font-bold uppercase">New? <span onclick="toggleAuth('register')" class="text-cyan-400 cursor-pointer">Create Account</span></p>
+                <p class="text-center text-[10px] text-slate-500 font-bold uppercase">New? <span onclick="toggleAuthSections('register')" class="text-cyan-400 cursor-pointer">Create Account</span></p>
             </div>
 
             <div id="registerSection" class="space-y-4 pt-4 hidden">
-                <h3 class="text-xl font-black text-center uppercase">Create Vault</h3>
-                <input type="email" id="regEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Email">
-                <input type="password" id="regPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Password">
+                <h3 class="text-xl font-black text-center uppercase italic">Create Vault</h3>
+                <input type="email" id="regEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Email Address">
+                <input type="password" id="regPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl outline-none" placeholder="Create Password">
                 <button onclick="registerPersonalAccount()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Register</button>
-                <p class="text-center text-[10px] text-slate-500 font-bold uppercase">Already have one? <span onclick="toggleAuth('login')" class="text-cyan-400 cursor-pointer">Login</span></p>
+                <p class="text-center text-[10px] text-slate-500 font-bold uppercase">Already have one? <span onclick="toggleAuthSections('login')" class="text-cyan-400 cursor-pointer">Login</span></p>
             </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
+
         function notify(msg) {
             const box = document.getElementById('notifBox');
             document.getElementById('notifMessage').innerText = msg;
             box.classList.remove('hidden');
             setTimeout(() => box.classList.add('hidden'), 3000);
         }
-        function openModal(mode) {
+
+        function openAuthModal(mode) {
             document.getElementById('authModal').classList.remove('hidden');
-            toggleAuth(mode);
+            toggleAuthSections(mode);
         }
-        function closeModal() { document.getElementById('authModal').classList.add('hidden'); }
-        function toggleAuth(mode) {
-            ['quickJoinSection', 'loginSection', 'registerSection'].forEach(id => document.getElementById(id).classList.add('hidden'));
+
+        function closeAuthModal() { 
+            document.getElementById('authModal').classList.add('hidden'); 
+        }
+
+        function toggleAuthSections(mode) {
+            const sections = ['quickJoinSection', 'loginSection', 'registerSection'];
+            sections.forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById(mode + 'Section').classList.remove('hidden');
         }
 
         async function joinFrictionless() {
-            const service_code = document.getElementById('serviceCode').value;
-            const name = document.getElementById('visitorName').value;
-            const res = await fetch('/api/auth/join-frictionless', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ service_code, name })
-            });
-            const data = await res.json();
-            if(data.status === 'success') {
-                localStorage.setItem('active_ticket_id', data.ticket_id);
-                window.location.href = '/status';
-            } else notify(data.message);
+            const service_code = document.getElementById('serviceCode').value.trim();
+            const name = document.getElementById('visitorName').value.trim();
+            const btn = document.getElementById('joinBtn');
+
+            if(!service_code || !name) return notify("Please fill all fields");
+
+            btn.disabled = true;
+            btn.innerText = "WAITING...";
+
+            try {
+                const res = await fetch('/api/auth/join-frictionless', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ service_code, name })
+                });
+                
+                const data = await res.json();
+                
+                if(data.status === 'success') {
+                    // Save to local storage for the status page to read
+                    localStorage.setItem('active_ticket_id', data.ticket_id);
+                    localStorage.setItem('org_name', data.organization_name);
+                    
+                    notify("Success! Redirecting...");
+                    // Redirect to the status route
+                    setTimeout(() => { window.location.href = '/status'; }, 1000);
+                } else {
+                    notify(data.message || "Invalid Code");
+                    btn.disabled = false;
+                    btn.innerText = "SECURE SPOT";
+                }
+            } catch (err) {
+                notify("Server Error. Try again.");
+                btn.disabled = false;
+                btn.innerText = "SECURE SPOT";
+            }
         }
 
+        // Logic for Login/Register stays the same
         async function loginUser() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
@@ -146,7 +177,7 @@
                 body: JSON.stringify({ email, password })
             });
             const data = await res.json();
-            if(data.status === 'success') notify("Check your email!");
+            if(data.status === 'success') notify("Check your email for confirmation!");
             else notify(data.message);
         }
     </script>
