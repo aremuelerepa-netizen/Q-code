@@ -122,6 +122,26 @@
             const data = await res.json();
             if(data.status === 'success') window.location.href = '/status';
         }
+
+        async function registerPersonalAccount() {
+    const email = document.querySelector('#registerSection input[type="email"]').value;
+    const password = document.querySelector('#registerSection input[placeholder="Create Password"]').value;
+
+    const res = await fetch('/api/auth/user-register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, password })
+    });
+    
+    const data = await res.json();
+    if(data.status === 'success') {
+        alert(data.message);
+        window.location.href = '/userpage';
+    } else {
+        alert(data.message);
+    }
+}
     </script>
 </body>
 </html>
+
