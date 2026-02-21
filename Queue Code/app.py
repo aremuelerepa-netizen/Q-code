@@ -30,7 +30,6 @@ def generate_unique_code():
     return 'QC-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
 def send_free_email(to_email, subject, body_text):
-    """Uses Gmail App Password. Wrapped in try/except to prevent server SIGKILL."""
     gmail_user = os.getenv("GMAIL_USER")
     gmail_pass = os.getenv("GMAIL_APP_PASSWORD") 
     
@@ -50,26 +49,11 @@ def send_free_email(to_email, subject, body_text):
         return False
 
 def get_live_position(user_id, org_id):
-    """Calculates how many people are ahead of a specific user in a specific queue."""
     try:
-        # Count users in the same org who joined BEFORE this user
         res = db.table("queue").select("id", count='exact').eq("org_id", org_id).lt("id", user_id).execute()
         return (res.count or 0) + 1
     except:
         return "?"
-
-# Middleware to protect separate feature pages (Identity Grows Later)
-def upgrade_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('home'))
-        
-        res = db.table("queue").select("email").eq("id", session['user_id']).single().execute()
-        if not res.data or not res.data.get('email'):
-            return render_template('upgrade_prompt.html')
-        return f(*args, **kwargs)
-    return decorated_function
 
 # --- 3. PAGE ROUTES ---
 @app.route('/')
@@ -78,16 +62,12 @@ def home():
 
 @app.route('/status')
 def status_view():
-    """Live status page for the user."""
-    if 'user_id' not in session:
-        return redirect(url_for('home'))
+    if 'user_id' not in session: return redirect(url_for('home'))
     return render_template('status.html')
 
 @app.route('/userpage')
 def user_dashboard():
-    """The mobile-app style dashboard."""
-    if 'user_id' not in session:
-        return redirect(url_for('home'))
+    if 'user_id' not in session: return redirect(url_for('home'))
     return render_template('userpage.html')
 
 @app.route('/login')
@@ -99,6 +79,7 @@ def reg_view(): return render_template('org reg page.html')
 @app.route('/super-admin')
 def super_admin_view():
     if not session.get('is_super_admin'): return redirect(url_for('login_view'))
+    # Fetch organizations that are NOT yet verified
     res = db.table("organizations").select("*").eq("verified", False).execute()
     return render_template('super_admin.html', pending_orgs=res.data)
 
@@ -108,11 +89,22 @@ def admin_dashboard():
     org_name = session.get('org_name', 'Organization')
     return render_template('Admin page.html', org_name=org_name)
 
-# --- 4. FRICTIONLESS USER FLOW ---
+# --- 4. SUPER ADMIN ACTIONS ---
+
+@app.route('/api/admin/approve-org/<org_id>', methods=['POST'])
+def approve_org(org_id):
+    """Allows Super Admin to approve a pending organization."""
+    if not session.get('is_super_admin'): return jsonify({"status": "error"}), 403
+    try:
+        db.table("organizations").update({"verified": True}).eq("id", org_id).execute()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# --- 5. USER AUTH (FRICTIONLESS & PERSONAL) ---
 
 @app.route('/api/auth/join-frictionless', methods=['POST'])
 def join_frictionless():
-    """Uber-style frictionless onboarding: Just a name and service code."""
     data = request.json
     service_code = data.get('service_code')
     visitor_name = data.get('name', 'Guest User')
@@ -120,57 +112,66 @@ def join_frictionless():
     
     try:
         res = db.table("queue").insert({
-            "org_id": service_code,
-            "visitor_name": visitor_name,
-            "login_code": device_token,
-            "entry_type": "WEB_QUICK"
+            "org_id": service_code, "visitor_name": visitor_name,
+            "login_code": device_token, "entry_type": "WEB_QUICK"
         }).execute()
         
         session.clear()
         session.permanent = True
         session['user_id'] = res.data[0]['id']
-        session['user_token'] = device_token
-        session['org_id'] = service_code # Keep track of which queue they joined
+        session['org_id'] = service_code
         
         return jsonify({"status": "success", "token": device_token})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/auth/upgrade-identity', methods=['POST'])
-def upgrade_identity():
-    """Later, if they want dashboard features, they add an email."""
-    if 'user_id' not in session: return jsonify({"status": "error"}), 401
+@app.route('/api/auth/user-register', methods=['POST'])
+def user_register():
+    """Handles Personal Account Creation (Email/Password)."""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password') # In production, use hash (e.g. werkzeug.security)
     
-    email = request.json.get('email')
     try:
-        db.table("queue").update({"email": email}).eq("id", session['user_id']).execute()
-        send_free_email(email, "Q-CODE Verified", "Your queue session is now linked to your email.")
-        return jsonify({"status": "success", "message": "Identity upgraded!"})
+        res = db.table("queue").insert({
+            "email": email, 
+            "login_code": generate_unique_code(),
+            "entry_type": "PERSONAL_ACCT",
+            "status": "active" # Placeholder for persistent accounts
+        }).execute()
+        
+        # You could add a password column to the 'queue' table in SQL
+        # Or create a separate 'users' table. Assuming 'queue' for now:
+        db.table("queue").update({"phone": password}).eq("email", email).execute() # Using phone as temp pass field
+        
+        return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/queue/poll', methods=['GET'])
-def poll_status():
-    """API for the status page to get the current position number."""
-    if 'user_id' not in session: return jsonify({"pos": "?"}), 401
-    pos = get_live_position(session['user_id'], session.get('org_id'))
-    return jsonify({"pos": pos})
+@app.route('/api/auth/login-with-code', methods=['POST'])
+def login_with_code():
+    res = db.table("queue").select("*").eq("login_code", request.json.get('login_code')).execute()
+    if res.data:
+        session.clear()
+        session['user_id'] = res.data[0]['id']
+        session['org_id'] = res.data[0]['org_id']
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error"}), 401
 
-# --- 5. ORG REGISTRATION & LOGIN ---
+# --- 6. ORG REGISTRATION & LOGIN ---
 
 @app.route('/api/auth/register', methods=['POST'])
 def register_org():
     data = request.json if request.is_json else request.form
     name = data.get('orgName') or data.get('business_name')
     email, phone, password = data.get('email'), data.get('phone'), data.get('password')
-    
     try:
         db.table("organizations").insert({
             "name": name, "email": email, "phone": phone, 
             "password": password, "verified": False
         }).execute()
         send_free_email(os.getenv("ADMIN_EMAIL"), "New Org Application", f"Org {name} is waiting.")
-        return jsonify({"status": "success", "message": "Application submitted!"})
+        return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -189,78 +190,25 @@ def login():
         org = res.data[0]
         if org['verified']:
             session.clear()
-            session.permanent = True
             session['org_id'] = str(org['id'])
             session['org_name'] = org['name']
-            session['is_super_admin'] = False
             return jsonify({"status": "success", "redirect": "/admin"})
-        return jsonify({"status": "pending", "message": "Awaiting verification"}), 403
-    
-    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
+        return jsonify({"status": "pending"}), 403
+    return jsonify({"status": "error"}), 401
 
-# --- 6. SERVICE MANAGEMENT & USER AUTH ---
+# --- 7. POLLING & SERVICES ---
 
-@app.route('/api/services/create', methods=['POST'])
-def create_service():
-    if 'org_id' not in session: return jsonify({"status": "error"}), 401
-    data = request.json
-    try:
-        db.table("services").insert({
-            "org_id": session['org_id'], "name": data.get('name'),
-            "start_time": data.get('start_time'), "end_time": data.get('end_time'),
-            "avg_session": data.get('avg_time'), "staff_list": data.get('staff'),
-            "required_fields": data.get('fields')
-        }).execute()
-        return jsonify({"status": "success"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+@app.route('/api/queue/poll', methods=['GET'])
+def poll_status():
+    if 'user_id' not in session: return jsonify({"pos": "?"}), 401
+    pos = get_live_position(session['user_id'], session.get('org_id'))
+    return jsonify({"pos": pos})
 
 @app.route('/api/services/list', methods=['GET'])
 def list_services():
     if 'org_id' not in session: return jsonify([]), 401
     res = db.table("services").select("*").eq("org_id", session['org_id']).execute()
     return jsonify(res.data)
-
-@app.route('/api/auth/request-email-otp', methods=['POST'])
-def request_email_otp():
-    email = request.json.get('email')
-    otp = str(random.randint(100000, 999999))
-    session['temp_otp'], session['temp_email'] = otp, email
-    if send_free_email(email, "Q-CODE Verification", f"Your code: {otp}"):
-        return jsonify({"status": "sent"})
-    return jsonify({"status": "error"}), 500
-
-@app.route('/api/auth/verify-email-otp', methods=['POST'])
-def verify_email_otp():
-    if request.json.get('otp') == session.get('temp_otp'):
-        email = session.get('temp_email')
-        login_code = generate_unique_code()
-        db.table("queue").upsert({"email": email, "login_code": login_code}, on_conflict="email").execute()
-        return jsonify({"status": "success", "login_code": login_code})
-    return jsonify({"status": "invalid"}), 401
-
-@app.route('/api/auth/login-with-code', methods=['POST'])
-def login_with_code():
-    res = db.table("queue").select("*").eq("login_code", request.json.get('login_code')).execute()
-    if res.data:
-        session.clear()
-        session['user_id'] = res.data[0]['id']
-        session['org_id'] = res.data[0]['org_id']
-        return jsonify({"status": "success"})
-    return jsonify({"status": "error"}), 401
-
-@app.route('/api/sms/incoming', methods=['POST'])
-def sim_webhook():
-    data = request.json 
-    sender_phone, msg_body = data.get('from'), data.get('message', '').strip().upper()
-    res = db.table("organizations").select("name", "id").eq("id", msg_body).execute()
-    if res.data:
-        org = res.data[0]
-        db.table("queue").insert({"phone": sender_phone, "org_id": org['id'], "entry_type": "SIM"}).execute()
-        reply = f"Q-CODE: In line for {org['name']}."
-    else:
-        reply = "Q-CODE: Invalid Service Code."
-    return jsonify({"to": sender_phone, "message": reply})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
