@@ -10,136 +10,189 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; }
-        .app-shell { max-width: 500px; margin: 0 auto; background: #0f172a; height: 100vh; display: flex; flex-direction: column; position: relative; }
-        .content-area { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+        body { font-family: 'Inter', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; }
+        .app-shell { max-width: 500px; margin: 0 auto; background: #0f172a; height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: env(safe-area-inset-bottom); }
+        .content-area { flex: 1; overflow-y: auto; padding-bottom: 120px; -webkit-overflow-scrolling: touch; }
         .glass-card { background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); }
         .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.2s; }
         .btn-cyan:active { transform: scale(0.95); }
-        .ai-fab { position: absolute; bottom: 100px; right: 20px; z-index: 50; }
-        #chat-ui { position: absolute; bottom: 100px; right: 20px; width: 320px; height: 450px; z-index: 60; display: none; flex-direction: column; border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 24px; }
-        .page { display: none; animation: fadeIn 0.4s ease-out; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Locked Feature Style */
-        .locked-overlay { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); }
+        .page { display: none; animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Premium Ticket Style */
+        .ticket-cutout { position: relative; overflow: hidden; }
+        .ticket-cutout::before, .ticket-cutout::after { content: ''; position: absolute; width: 20px; height: 20px; background: #0f172a; border-radius: 50%; top: 50%; transform: translateY(-50%); }
+        .ticket-cutout::before { left: -10px; }
+        .ticket-cutout::after { right: -10px; }
+
+        .modal-backdrop { background: rgba(2, 6, 23, 0.9); backdrop-filter: blur(8px); }
     </style>
 </head>
 
 <body>
 
     <div class="app-shell">
-        <header class="p-6 flex justify-between items-center bg-slate-900/80 border-b border-slate-800 shrink-0 backdrop-blur-md">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 btn-cyan rounded-lg flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                    <i data-lucide="zap" class="w-5 h-5"></i>
+        <header class="p-6 flex justify-between items-center bg-slate-900/90 border-b border-slate-800 shrink-0 backdrop-blur-xl z-50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 btn-cyan rounded-xl flex items-center justify-center text-white">
+                    <i data-lucide="zap" class="w-6 h-6"></i>
                 </div>
-                <span class="text-xl font-black tracking-tighter uppercase">Q-CODE</span>
+                <div>
+                    <span class="text-xs font-black text-slate-500 uppercase tracking-widest block leading-none mb-1">Q-CODE</span>
+                    <span class="text-lg font-black tracking-tight uppercase leading-none">DASHBOARD</span>
+                </div>
             </div>
-            <div onclick="showUpgradeModal()" class="cursor-pointer bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-2">
-                <div class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
-                <span id="user-display-name" class="text-[10px] font-bold text-slate-300">Guest User</span>
+            <div onclick="showUpgradeModal()" class="cursor-pointer bg-slate-800/80 px-4 py-2 rounded-2xl border border-slate-700 flex items-center gap-3">
+                <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                <span id="user-display-name" class="text-xs font-bold text-slate-200">
+                    {% if email %}{{ email.split('@')[0] }}{% else %}Guest User{% endif %}
+                </span>
             </div>
         </header>
 
         <div class="content-area p-6">
             <div id="page-home" class="page active">
                 <div class="mb-10">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Manual Check-In</p>
-                    <div class="space-y-3">
-                        <input type="text" id="joinInput" placeholder="Enter Service Code (e.g. 101)"
-                            class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-5 py-4 text-white font-bold outline-none focus:border-cyan-400 transition-all">
-                        <button onclick="handleJoin()" class="w-full py-4 btn-cyan rounded-2xl font-black text-white shadow-xl shadow-cyan-500/10 uppercase tracking-widest text-xs">Join Queue</button>
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Manual Entry</p>
+                    <div class="glass-card p-2 rounded-[2.5rem] flex flex-col gap-2">
+                        <input type="text" id="joinInput" placeholder="Enter Code (e.g. SERV-508640)"
+                            class="w-full bg-slate-900/50 border-none rounded-[2rem] px-6 py-5 text-white font-bold text-lg outline-none uppercase">
+                        <button onclick="handleJoin()" class="w-full py-5 btn-cyan rounded-[2rem] font-black text-white uppercase tracking-widest text-sm">Join Service Queue</button>
                     </div>
                 </div>
 
                 <div id="active-queues" class="space-y-4">
                     <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Live Status</p>
-                    <div id="empty-state" class="text-center py-16 glass-card rounded-[2rem] border-dashed border-slate-700">
-                        <p class="text-slate-600 text-sm">No active lines. Join a service to begin.</p>
+                    
+                    <div id="empty-state" class="text-center py-20 glass-card rounded-[3rem] border-2 border-dashed border-slate-800/50">
+                        <p class="text-slate-500 font-medium px-10">No active lines.</p>
+                    </div>
+                    
+                    <div id="live-ticket-container" class="hidden">
+                        <div class="glass-card rounded-[2.5rem] ticket-cutout p-8">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h2 id="service-name-display" class="text-2xl font-black text-white">---</h2>
+                                    <p id="status-tag" class="text-cyan-400 font-bold text-xs uppercase tracking-widest">Waiting</p>
+                                </div>
+                                <div class="text-right">
+                                    <div id="queue-position" class="text-4xl font-black text-white">#0</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div id="page-near" class="page">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Discovery</p>
-                <div id="near-list" class="space-y-4"></div>
-            </div>
-
-            <div id="page-history" class="page relative">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Visit History</p>
-                <div id="history-locked" class="glass-card p-8 rounded-3xl text-center space-y-4">
-                    <div class="w-12 h-12 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto"><i data-lucide="lock" class="w-6 h-6"></i></div>
-                    <h4 class="font-bold">Unlock History</h4>
-                    <p class="text-xs text-slate-400">Add an email to your account to save your visit history across all devices.</p>
-                    <button onclick="showUpgradeModal()" class="w-full py-3 btn-cyan rounded-xl text-[10px] font-black uppercase">Secure My Account</button>
+        <div id="notifModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-8 modal-backdrop">
+            <div class="glass-card w-full max-w-sm rounded-[3rem] p-10 text-center space-y-6 border-cyan-500/30">
+                <div id="notif-icon" class="w-16 h-16 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto">
+                    <i data-lucide="bell" class="w-8 h-8"></i>
                 </div>
-                <div id="history-list" class="hidden space-y-3"></div>
+                <h3 id="notif-title" class="text-xl font-black">Notification</h3>
+                <p id="notif-msg" class="text-xs text-slate-400"></p>
+                <button onclick="closeModal('notifModal')" class="w-full py-4 btn-cyan rounded-2xl font-black text-xs uppercase">Dismiss</button>
             </div>
         </div>
 
-        <div id="upgradeModal" class="fixed inset-0 bg-slate-950/90 z-[100] hidden flex items-center justify-center p-6">
-            <div class="glass-card w-full max-w-sm rounded-[2rem] p-8 text-center space-y-6">
-                <h3 class="text-xl font-black">Save Your Spot</h3>
-                <p class="text-xs text-slate-400 leading-relaxed">Linking your email allows us to notify you when it's your turn and keeps your Q-CODE safe.</p>
-                <input type="email" id="upgradeEmail" placeholder="Enter your email" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-cyan-400">
-                <button onclick="submitUpgrade()" class="w-full py-4 btn-cyan rounded-xl font-black text-xs uppercase tracking-widest">Upgrade Account</button>
-                <button onclick="closeUpgradeModal()" class="text-slate-500 text-[10px] font-bold uppercase">Maybe Later</button>
+        <div id="endCodeModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center p-8 modal-backdrop">
+            <div class="glass-card w-full max-w-sm rounded-[3rem] p-10 text-center space-y-6 border-green-500/30">
+                <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                    <i data-lucide="check-circle" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-2xl font-black">Your Turn!</h3>
+                <p class="text-xs text-slate-400">Please provide the <b>End Code</b> from the admin to complete your session.</p>
+                <input type="text" id="endCodeInput" placeholder="Enter End Code" class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-4 py-4 text-center text-white font-bold uppercase">
+                <button onclick="verifyEndCode()" class="w-full py-5 bg-green-500 rounded-2xl font-black text-white uppercase text-xs">Verify & Finish</button>
             </div>
         </div>
 
-        <button onclick="toggleChat()" class="ai-fab w-14 h-14 btn-cyan rounded-full shadow-2xl flex items-center justify-center">
-            <i data-lucide="message-square-text" class="text-white w-6 h-6"></i>
-        </button>
-
-        <nav class="absolute bottom-0 left-0 right-0 h-20 bg-slate-900 border-t border-slate-800 flex justify-around items-center z-40">
-            <button onclick="nav('home')" id="nav-home" class="flex flex-col items-center gap-1 text-cyan-400">
-                <i data-lucide="home" class="w-5 h-5"></i><span class="text-[9px] font-black uppercase tracking-widest">Home</span>
-            </button>
-            <button onclick="nav('near')" id="nav-near" class="flex flex-col items-center gap-1 text-slate-500">
-                <i data-lucide="map-pin" class="w-5 h-5"></i><span class="text-[9px] font-black uppercase tracking-widest">Discovery</span>
-            </button>
-            <button onclick="nav('history')" id="nav-history" class="flex flex-col items-center gap-1 text-slate-500">
-                <i data-lucide="clock" class="w-5 h-5"></i><span class="text-[9px] font-black uppercase tracking-widest">History</span>
-            </button>
+        <nav class="absolute bottom-6 left-6 right-6 h-20 glass-card rounded-[2rem] flex justify-around items-center z-40 px-4">
+            <button onclick="nav('home')" class="text-cyan-400"><i data-lucide="home"></i></button>
+            <button onclick="nav('near')" class="text-slate-500"><i data-lucide="compass"></i></button>
+            <button onclick="nav('history')" class="text-slate-500"><i data-lucide="clock"></i></button>
         </nav>
     </div>
 
     <script>
         lucide.createIcons();
-        
-        function nav(p) {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById('page-' + p).classList.add('active');
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.replace('text-cyan-400', 'text-slate-500'));
-            document.getElementById('nav-' + p).classList.replace('text-slate-500', 'text-cyan-400');
-            if (p === 'near') renderNear();
+        let activeTicketId = null;
+
+        function showModal(id, title, msg) {
+            if(title) document.getElementById('notif-title').innerText = title;
+            if(msg) document.getElementById('notif-msg').innerText = msg;
+            document.getElementById(id).classList.remove('hidden');
         }
 
-        function showUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); }
-        function closeUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        async function submitUpgrade() {
-            const email = document.getElementById('upgradeEmail').value;
-            if(!email) return alert("Email required");
-            
+        async function handleJoin() {
+            const code = document.getElementById('joinInput').value.trim().toUpperCase();
+            if(!code) return showModal('notifModal', 'Error', 'Please enter a service code.');
+
             try {
-                const res = await fetch('/api/auth/upgrade-identity', {
+                const res = await fetch('/api/queue/join', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ 
+                        service_code: code,
+                        visitor_name: document.getElementById('user-display-name').innerText 
+                    })
                 });
-                if(res.ok) {
-                    document.getElementById('user-display-name').innerText = email.split('@')[0];
-                    closeUpgradeModal();
-                    alert("Account upgraded! History unlocked.");
+                const data = await res.json();
+                if(data.status === 'success') {
+                    activeTicketId = data.ticket_id;
+                    showModal('notifModal', 'Joined!', `You are position #${data.position} in the queue.`);
+                    updateUI(data);
+                    startStatusPolling();
+                } else {
+                    showModal('notifModal', 'Invalid Code', 'That service code was not recognized.');
                 }
-            } catch (e) { alert("Upgrade failed."); }
+            } catch(e) { showModal('notifModal', 'System Error', 'Could not connect to server.'); }
         }
 
-        // ... existing handleJoin, renderHome, renderNear logic goes here ...
-        // Note: Ensure handleJoin calls the backend api/auth/join-frictionless if needed
+        function updateUI(data) {
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('live-ticket-container').classList.remove('hidden');
+            document.getElementById('service-name-display').innerText = data.service_name;
+            document.getElementById('queue-position').innerText = "#" + data.position;
+        }
+
+        // Logic to check if it's the user's turn
+        function startStatusPolling() {
+            setInterval(async () => {
+                if(!activeTicketId) return;
+                const res = await fetch(`/api/queue/status/${activeTicketId}`);
+                const data = await res.json();
+                
+                document.getElementById('queue-position').innerText = "#" + data.position;
+                
+                // If position is 0 or "Serving", trigger the End Code Modal
+                if(data.position === 0 || data.status === 'serving') {
+                    document.getElementById('endCodeModal').classList.remove('hidden');
+                }
+            }, 5000);
+        }
+
+        async function verifyEndCode() {
+            const endCode = document.getElementById('endCodeInput').value.trim().toUpperCase();
+            const res = await fetch('/api/queue/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ticket_id: activeTicketId, end_code: endCode })
+            });
+            const data = await res.json();
+            if(data.status === 'success') {
+                closeModal('endCodeModal');
+                showModal('notifModal', 'Success', 'Session completed. Thank you!');
+                location.reload();
+            } else {
+                alert("Incorrect End Code. Please ask the admin.");
+            }
+        }
     </script>
 </body>
 </html>
