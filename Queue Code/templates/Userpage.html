@@ -3,279 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <meta name="theme-color" content="#0f172a">
-    <title>Q-CODE | Mobile Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>Q-CODE | Live Status</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; }
-        .app-shell { max-width: 500px; margin: 0 auto; background: #0f172a; height: 100dvh; display: flex; flex-direction: column; position: relative; }
-        .content-area { flex: 1; overflow-y: auto; padding-bottom: 120px; -webkit-overflow-scrolling: touch; }
-        .glass-card { background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow-x: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
         .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.2s; }
-        .btn-cyan:active { transform: scale(0.95); opacity: 0.9; }
         
-        /* Navigation Logic */
-        .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Ticket Visuals */
-        .ticket-cutout { position: relative; overflow: hidden; border-left: 4px solid #22d3ee; }
-        .ticket-cutout::before, .ticket-cutout::after { content: ''; position: absolute; width: 20px; height: 20px; background: #0f172a; border-radius: 50%; top: 50%; transform: translateY(-50%); }
-        .ticket-cutout::before { left: -10px; }
-        .ticket-cutout::after { right: -10px; }
+        /* Status Ring Animation */
+        .status-ring {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 6px solid rgba(34, 211, 238, 0.1);
+            border-top-color: #22d3ee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            animation: spin 2s linear infinite;
+        }
+        .ring-inner { animation: counter-spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes counter-spin { 100% { transform: rotate(-360deg); } }
 
-        .modal-backdrop { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(12px); }
+        .page { display: none; animation: fadeIn 0.4s ease-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="bg-slate-950">
 
-    <div class="app-shell">
-        <header class="p-5 flex justify-between items-center bg-slate-900/90 border-b border-slate-800 shrink-0 backdrop-blur-xl z-50">
+    <div class="max-w-[450px] mx-auto min-h-screen flex flex-col relative">
+        
+        <header class="p-5 flex justify-between items-center glass sticky top-0 z-50">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 btn-cyan rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                    <i data-lucide="zap" class="w-6 h-6"></i>
+                <div class="w-10 h-10 btn-cyan rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="zap" class="w-6 h-6 text-slate-900"></i>
                 </div>
                 <div>
-                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block leading-none mb-1">Q-CODE</span>
-                    <span id="page-title" class="text-lg font-black tracking-tight uppercase leading-none">HOME</span>
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block leading-none">Q-CODE</span>
+                    <span id="user-display-name" class="text-sm font-extrabold text-white uppercase">User</span>
                 </div>
             </div>
-            <div class="bg-slate-800/80 px-4 py-2 rounded-2xl border border-slate-700 flex items-center gap-2">
-                <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                <span id="user-display-name" class="text-xs font-bold text-slate-200 uppercase">Guest</span>
-            </div>
+            <button onclick="handleLogout()" class="w-10 h-10 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-center text-rose-500">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
         </header>
 
-        <div class="content-area p-6">
-            <div id="page-home" class="page active">
-                <div class="mb-8">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Join New Line</p>
-                    <div class="glass-card p-2 rounded-[2.5rem] flex flex-col gap-2">
-                        <input type="text" id="joinInput" placeholder="ENTER SERVICE CODE"
-                            class="w-full bg-slate-900/50 border-none rounded-[2rem] px-6 py-5 text-white font-bold text-lg outline-none uppercase placeholder:text-slate-600">
-                        <button id="joinBtn" onclick="handleJoin()" class="w-full py-5 btn-cyan rounded-[2rem] font-black text-white uppercase tracking-widest text-sm shadow-lg">Join Queue</button>
+        <main class="flex-1 p-6 pb-32">
+            <section id="page-home" class="page active">
+                <div class="mb-10">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 block">New Check-in</label>
+                    <div class="glass p-2 rounded-3xl flex gap-2">
+                        <input type="text" id="joinInput" placeholder="SERVICE CODE" class="flex-1 bg-transparent px-4 font-bold text-white outline-none uppercase">
+                        <button onclick="handleJoin()" class="btn-cyan px-6 py-3 rounded-2xl font-black text-[10px] text-slate-900 uppercase">Join</button>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Active Ticket</p>
-                    <div id="empty-state" class="text-center py-16 glass-card rounded-[3rem] border-2 border-dashed border-slate-800/50">
-                        <i data-lucide="ticket" class="w-8 h-8 mx-auto mb-3 text-slate-700"></i>
-                        <p class="text-slate-500 text-sm font-medium">No active lines found.</p>
+                <div id="queue-container" class="space-y-12">
                     </div>
-                    
-                    <div id="live-ticket-container" class="hidden animate-fade">
-                        <div class="glass-card rounded-[2.5rem] ticket-cutout p-8 relative">
-                            <div class="flex justify-between items-start mb-6">
-                                <div>
-                                    <h2 id="service-name-display" class="text-2xl font-black text-white mb-1">---</h2>
-                                    <div class="flex items-center gap-2">
-                                        <span class="relative flex h-2 w-2">
-                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                                            <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                                        </span>
-                                        <p id="status-tag" class="text-cyan-400 font-bold text-[10px] uppercase tracking-widest">In Queue</p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div id="queue-position" class="text-5xl font-black text-white italic">#--</div>
-                                </div>
-                            </div>
-                            <button onclick="confirmLeave()" class="text-[10px] font-black text-rose-500 uppercase tracking-widest opacity-50 hover:opacity-100 transition-opacity">Cancel My Spot</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </section>
+        </main>
 
-            <div id="page-near" class="page">
-                <div class="text-center py-20">
-                    <i data-lucide="map-pin" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
-                    <h3 class="text-xl font-bold">Nearby Services</h3>
-                    <p class="text-slate-500 text-sm mt-2">Enable GPS to find local queues.</p>
-                </div>
-            </div>
-
-            <div id="page-history" class="page">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Recent Visits</p>
-                <div class="glass-card p-6 rounded-3xl opacity-50">
-                    <p class="text-sm">No historical data available.</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="notifModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-8 modal-backdrop">
-            <div class="glass-card w-full max-w-sm rounded-[3rem] p-10 text-center space-y-6 border-cyan-500/30">
-                <div id="notif-icon-box" class="w-16 h-16 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto">
-                    <i data-lucide="info" id="notif-icon" class="w-8 h-8"></i>
-                </div>
-                <h3 id="notif-title" class="text-xl font-black italic">Notification</h3>
-                <p id="notif-msg" class="text-xs text-slate-400 leading-relaxed"></p>
-                <button onclick="closeModal('notifModal')" class="w-full py-4 btn-cyan rounded-2xl font-black text-xs uppercase shadow-lg">Dismiss</button>
-            </div>
-        </div>
-
-        <div id="endCodeModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center p-8 modal-backdrop">
-            <div class="glass-card w-full max-w-sm rounded-[3rem] p-10 text-center space-y-6 border-green-500/30">
-                <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto animate-bounce">
-                    <i data-lucide="star" class="w-10 h-10"></i>
-                </div>
-                <h3 class="text-2xl font-black italic">IT'S YOUR TURN!</h3>
-                <p class="text-xs text-slate-400 px-4">The admin has clocked you in. Please enter the <b>End Code</b> to finish.</p>
-                <input type="text" id="endCodeInput" placeholder="0000" class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-4 py-5 text-center text-white font-black text-2xl uppercase outline-none focus:border-green-500">
-                <button onclick="verifyEndCode()" class="w-full py-5 bg-green-500 rounded-2xl font-black text-white uppercase text-xs shadow-lg shadow-green-500/20">Verify & Complete</button>
-            </div>
-        </div>
-
-        <nav class="absolute bottom-6 left-6 right-6 h-20 glass-card rounded-[2.5rem] flex justify-around items-center z-40 px-4 border-t border-white/5">
-            <button onclick="nav('home')" id="nav-home" class="nav-btn text-cyan-400 transition-colors"><i data-lucide="home"></i></button>
-            <button onclick="nav('near')" id="nav-near" class="nav-btn text-slate-500 transition-colors"><i data-lucide="compass"></i></button>
-            <button onclick="nav('history')" id="nav-history" class="nav-btn text-slate-500 transition-colors"><i data-lucide="clock"></i></button>
+        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-[400px] h-20 glass rounded-[2.5rem] flex justify-around items-center z-40 border-white/10 shadow-2xl">
+            <button onclick="nav('home')" class="text-cyan-400"><i data-lucide="home"></i></button>
+            <button onclick="location.reload()" class="text-slate-500"><i data-lucide="refresh-cw"></i></button>
         </nav>
     </div>
 
     <script>
         lucide.createIcons();
-        let pollingInterval = null;
 
-        // On Load: Restore Session
+        // 1. IDENTITY LOGIC: Automatically set the user's name
         window.onload = () => {
-            const savedTicket = localStorage.getItem('active_ticket_id');
-            if(savedTicket) {
-                resumeSession(savedTicket);
-            }
+            // Priority: LocalStorage Name -> URL Param -> Default Guest
+            const savedName = localStorage.getItem('user_name') || 'Guest User';
+            document.getElementById('user-display-name').innerText = savedName;
+
+            renderActiveQueues();
         };
 
         function nav(pageId) {
-            // Update UI Pages
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-' + pageId).classList.add('active');
-            
-            // Update Title
-            document.getElementById('page-title').innerText = pageId.toUpperCase();
-
-            // Update Nav Icons
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-cyan-400', 'text-slate-500'));
-            document.getElementById('nav-' + pageId).classList.replace('text-slate-500', 'text-cyan-400');
         }
 
-        function showNotif(title, msg, type = 'info') {
-            document.getElementById('notif-title').innerText = title;
-            document.getElementById('notif-msg').innerText = msg;
-            const box = document.getElementById('notif-icon-box');
-            if(type === 'error') {
-                box.className = "w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto";
-            } else {
-                box.className = "w-16 h-16 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto";
+        function handleLogout() {
+            if(confirm("Are you sure you want to logout?")) {
+                localStorage.clear();
+                window.location.href = "/login"; // Redirect to your login page
             }
-            document.getElementById('notifModal').classList.remove('hidden');
         }
 
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        // 2. QUEUE LOGIC: The Big Circles
+        function renderActiveQueues() {
+            const container = document.getElementById('queue-container');
+            const tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
+
+            if(tickets.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20 opacity-30">
+                        <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-4"></i>
+                        <p class="font-bold text-[10px] uppercase tracking-widest">No active lines</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = tickets.map(t => `
+                <div class="text-center">
+                    <div class="status-ring mb-6">
+                        <div class="ring-inner">
+                            <span class="text-[10px] font-black text-slate-500 uppercase block">Position</span>
+                            <span class="text-6xl font-black italic text-white tracking-tighter">#${t.position}</span>
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-black uppercase italic tracking-tight">${t.service_name}</h2>
+                    <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">Live Updates Active</p>
+                    
+                    <button onclick="leaveQueue('${t.ticket_id}')" class="mt-6 text-rose-500 text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100">
+                        Cancel Spot
+                    </button>
+                </div>
+            `).join('<hr class="border-white/5 my-10">');
+        }
 
         async function handleJoin() {
             const code = document.getElementById('joinInput').value.trim().toUpperCase();
-            const btn = document.getElementById('joinBtn');
-            const visitorName = document.getElementById('user-display-name').innerText;
+            if(!code) return;
 
-            if(!code) return showNotif('Missing Code', 'Please enter a service code to continue.', 'error');
+            // Simulate API call (replace with your actual fetch)
+            const mockResponse = {
+                status: 'success',
+                ticket_id: 'TK-' + Math.random().toString(36).substr(2, 5),
+                service_name: 'Tech Support', // This would come from your DB
+                position: 5
+            };
 
-            btn.disabled = true;
-            btn.innerText = "VERIFYING...";
-
-            try {
-                const res = await fetch('/api/queue/join', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ service_code: code, visitor_name: visitorName })
-                });
-                const data = await res.json();
-
-                if(data.status === 'success') {
-                    localStorage.setItem('active_ticket_id', data.ticket_id);
-                    localStorage.setItem('service_name', data.service_name);
-                    
-                    showNotif('Joined!', `You are in line for ${data.service_name}. Your position is #${data.position}.`);
-                    updateTicketUI(data);
-                    startPolling(data.ticket_id);
-                } else {
-                    showNotif('Invalid Code', 'This code does not match any active Supabase service.', 'error');
-                }
-            } catch(e) {
-                showNotif('Connection Error', 'Could not reach Supabase. Check your internet.', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Join Queue";
-            }
-        }
-
-        function updateTicketUI(data) {
-            document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('live-ticket-container').classList.remove('hidden');
-            document.getElementById('service-name-display').innerText = data.service_name || localStorage.getItem('service_name');
-            document.getElementById('queue-position').innerText = "#" + data.position;
+            let tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
+            tickets.push(mockResponse);
+            localStorage.setItem('active_tickets', JSON.stringify(tickets));
             
-            if(data.position === 0 || data.status === 'serving') {
-                document.getElementById('status-tag').innerText = "Serving Now";
-                document.getElementById('endCodeModal').classList.remove('hidden');
-            }
-        }
-
-        function startPolling(ticketId) {
-            if(pollingInterval) clearInterval(pollingInterval);
-            pollingInterval = setInterval(async () => {
-                try {
-                    const res = await fetch(`/api/queue/status/${ticketId}`);
-                    const data = await res.json();
-                    updateTicketUI(data);
-                    if(data.status === 'completed') {
-                        location.reload();
-                    }
-                } catch(e) { console.error("Poll error"); }
-            }, 5000);
-        }
-
-        async function resumeSession(ticketId) {
-            try {
-                const res = await fetch(`/api/queue/status/${ticketId}`);
-                const data = await res.json();
-                if(data.status !== 'completed') {
-                    updateTicketUI(data);
-                    startPolling(ticketId);
-                } else {
-                    localStorage.removeItem('active_ticket_id');
-                }
-            } catch(e) { localStorage.removeItem('active_ticket_id'); }
-        }
-
-        async function verifyEndCode() {
-            const ticketId = localStorage.getItem('active_ticket_id');
-            const endCode = document.getElementById('endCodeInput').value.trim().toUpperCase();
-            
-            const res = await fetch('/api/queue/complete', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ ticket_id: ticketId, end_code: endCode })
-            });
-            const data = await res.json();
-            
-            if(data.status === 'success') {
-                localStorage.clear();
-                closeModal('endCodeModal');
-                showNotif('Session Done', 'Thank you for using Q-CODE.');
-                setTimeout(() => location.reload(), 2000);
-            } else {
-                showNotif('Wrong Code', 'The end code is incorrect. Check with the admin.', 'error');
-            }
-        }
-
-        function confirmLeave() {
-            if(confirm("Forfeit your spot in line?")) {
-                localStorage.clear();
-                location.reload();
-            }
+            document.getElementById('joinInput').value = '';
+            renderActiveQueues();
         }
     </script>
 </body>
