@@ -41,7 +41,6 @@ def send_free_email(to_email, subject, body_text):
     msg["To"] = to_email
 
     try:
-        # Reduced timeout to prevent Gunicorn worker timeout
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=5) as smtp:
             smtp.login(gmail_user, gmail_pass)
             smtp.send_message(msg)
@@ -50,6 +49,15 @@ def send_free_email(to_email, subject, body_text):
         print(f"NON-CRITICAL EMAIL ERROR: {e}")
         return False
 
+def get_live_position(user_id, org_id):
+    """Calculates how many people are ahead of a specific user in a specific queue."""
+    try:
+        # Count users in the same org who joined BEFORE this user
+        res = db.table("queue").select("id", count='exact').eq("org_id", org_id).lt("id", user_id).execute()
+        return (res.count or 0) + 1
+    except:
+        return "?"
+
 # Middleware to protect separate feature pages (Identity Grows Later)
 def upgrade_required(f):
     @wraps(f)
@@ -57,17 +65,30 @@ def upgrade_required(f):
         if 'user_id' not in session:
             return redirect(url_for('home'))
         
-        # Check if they have an email (Verified User)
         res = db.table("queue").select("email").eq("id", session['user_id']).single().execute()
         if not res.data or not res.data.get('email'):
-            # If no email, they see the 'Upgrade' prompt instead of the feature
             return render_template('upgrade_prompt.html')
         return f(*args, **kwargs)
     return decorated_function
 
 # --- 3. PAGE ROUTES ---
 @app.route('/')
-def home(): return render_template('index.html')
+def home(): 
+    return render_template('index.html')
+
+@app.route('/status')
+def status_view():
+    """Live status page for the user."""
+    if 'user_id' not in session:
+        return redirect(url_for('home'))
+    return render_template('status.html')
+
+@app.route('/userpage')
+def user_dashboard():
+    """The mobile-app style dashboard."""
+    if 'user_id' not in session:
+        return redirect(url_for('home'))
+    return render_template('userpage.html')
 
 @app.route('/login')
 def login_view(): return render_template('login page.html')
@@ -109,6 +130,7 @@ def join_frictionless():
         session.permanent = True
         session['user_id'] = res.data[0]['id']
         session['user_token'] = device_token
+        session['org_id'] = service_code # Keep track of which queue they joined
         
         return jsonify({"status": "success", "token": device_token})
     except Exception as e:
@@ -122,9 +144,17 @@ def upgrade_identity():
     email = request.json.get('email')
     try:
         db.table("queue").update({"email": email}).eq("id", session['user_id']).execute()
+        send_free_email(email, "Q-CODE Verified", "Your queue session is now linked to your email.")
         return jsonify({"status": "success", "message": "Identity upgraded!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/queue/poll', methods=['GET'])
+def poll_status():
+    """API for the status page to get the current position number."""
+    if 'user_id' not in session: return jsonify({"pos": "?"}), 401
+    pos = get_live_position(session['user_id'], session.get('org_id'))
+    return jsonify({"pos": pos})
 
 # --- 5. ORG REGISTRATION & LOGIN ---
 
@@ -135,15 +165,11 @@ def register_org():
     email, phone, password = data.get('email'), data.get('phone'), data.get('password')
     
     try:
-        # DB first (Essential)
         db.table("organizations").insert({
             "name": name, "email": email, "phone": phone, 
             "password": password, "verified": False
         }).execute()
-        
-        # Email second (Non-essential/wrapped)
         send_free_email(os.getenv("ADMIN_EMAIL"), "New Org Application", f"Org {name} is waiting.")
-        
         return jsonify({"status": "success", "message": "Application submitted!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -219,6 +245,7 @@ def login_with_code():
     if res.data:
         session.clear()
         session['user_id'] = res.data[0]['id']
+        session['org_id'] = res.data[0]['org_id']
         return jsonify({"status": "success"})
     return jsonify({"status": "error"}), 401
 
