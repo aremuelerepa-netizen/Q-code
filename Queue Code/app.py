@@ -145,8 +145,32 @@ def complete_session():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/auth/login', methods=['POST'])
+def admin_login_alias():
+    """Matches the /api/auth/login route called by your HTML"""
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+
+        # Attempt to sign in via Supabase
+        res = supabase.auth.sign_in_with_password({
+            "email": email, 
+            "password": password
+        })
+        
+        # If successful, return the redirect path and token
+        return jsonify({
+            "status": "success", 
+            "redirect": "/userpage",
+            "session": res.session.access_token
+        })
+    except Exception as e:
+        # If credentials are wrong or user doesn't exist
+        return jsonify({"status": "error", "message": "Invalid Admin Credentials"}), 401
 # --- RENDER BOOT LOGIC ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
 
