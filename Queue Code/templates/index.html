@@ -14,7 +14,6 @@
         .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade { animation: fadeIn 0.8s ease-out forwards; }
-        /* Prevent horizontal scroll on mobile */
         html, body { position: relative; overflow-x: hidden; }
     </style>
 </head>
@@ -30,7 +29,7 @@
     </div>
 
     <nav class="fixed top-0 w-full z-50 px-4 py-4 flex items-center justify-between glass border-b border-white/5">
-        <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider">Create Queue</a>
+        <a href="/login" class="btn-cyan px-4 py-2 rounded-lg text-slate-950 font-bold text-[10px] uppercase tracking-wider">Business Portal</a>
         <div class="flex items-center gap-2">
             <span class="text-lg font-black tracking-tighter uppercase italic">Q-CODE</span>
             <div class="w-6 h-6 btn-cyan rounded-md flex items-center justify-center">
@@ -43,35 +42,35 @@
         <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-cyan-500/10 blur-[80px] rounded-full -z-10"></div>
         
         <div class="animate-fade flex flex-col items-center w-full max-w-md">
-            <span class="px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest mb-6 inline-block">The Future of Waiting</span>
-            
+            <span class="px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest mb-6 inline-block">Frictionless Waiting</span>
             <h1 class="text-4xl md:text-8xl font-black tracking-tight mb-4 leading-[1.1]">
                 Redefining the <br><span class="text-gradient">Queue Experience.</span>
             </h1>
-            
             <p class="text-slate-400 text-sm md:text-xl leading-relaxed mb-10 px-2">
-                Join queues digitally, track your spot in real-time, and get notified when it's your turn.
+                No passwords. Just join, track, and be served.
             </p>
-            
-            <button onclick="openModal('join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase tracking-widest">
+            <button onclick="openModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase tracking-widest">
                 Join a Queue
+            </button>
+            <button onclick="openModal('login')" class="mt-4 text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
+                Enter with Q-CODE
             </button>
         </div>
     </main>
 
     <div id="authModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4 z-[100]">
-        <div class="glass w-full max-w-[380px] rounded-[28px] p-6 relative border-white/10 shadow-2xl">
+        <div class="glass w-full max-w-[380px] rounded-[28px] p-8 relative border-white/10 shadow-2xl">
             <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
 
-            <div id="emailSection" class="space-y-6 pt-4">
+            <div id="quickJoinSection" class="space-y-6 pt-4">
                 <div class="text-center">
-                    <h3 class="text-xl font-black mb-1">Verification</h3>
-                    <p class="text-slate-400 text-xs">Enter your email to get a login code.</p>
+                    <h3 class="text-xl font-black mb-1">Join Queue</h3>
+                    <p class="text-slate-400 text-xs">Enter details to secure your spot.</p>
                 </div>
                 <div class="space-y-3">
-                    <input type="email" id="userEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="name@email.com">
-                    <button onclick="requestOTP()" id="otpBtn" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Send Code</button>
-                    <button onclick="toggleMode('login')" class="w-full text-slate-500 text-[10px] font-bold uppercase tracking-tighter">Already have a Q-CODE? Login</button>
+                    <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm text-center font-bold" placeholder="SERVICE CODE (e.g. 101)">
+                    <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm text-center" placeholder="YOUR NAME (OPTIONAL)">
+                    <button onclick="joinFrictionless()" id="joinBtn" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Secure Spot</button>
                 </div>
             </div>
 
@@ -83,21 +82,15 @@
                 <div class="space-y-3">
                     <input type="text" id="loginCodeInput" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center text-xl font-mono uppercase" placeholder="QC-XXXX">
                     <button onclick="loginWithCode()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Enter Dashboard</button>
-                    <button onclick="toggleMode('join')" class="w-full text-slate-500 text-[10px] font-bold uppercase tracking-tighter">Need to verify email instead?</button>
                 </div>
-            </div>
-
-            <div id="verifySection" class="hidden space-y-6 pt-4 text-center">
-                <h3 class="text-xl font-black">Check Email</h3>
-                <input type="text" maxlength="6" id="otpValue" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center text-3xl font-black tracking-widest" placeholder="000000">
-                <button onclick="verifyOTP()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Verify</button>
             </div>
 
             <div id="successSection" class="hidden space-y-6 text-center pt-4 animate-fade">
                 <div class="w-16 h-16 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto border border-cyan-400/20"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
-                <h3 class="text-xl font-black">Account Secured</h3>
-                <div id="finalLoginCode" class="p-4 bg-slate-900 border border-cyan-500/30 rounded-xl text-2xl font-mono font-black text-cyan-400">---</div>
-                <button onclick="window.location.href='/status'" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Access Status</button>
+                <h3 class="text-xl font-black">You're in line!</h3>
+                <p class="text-slate-400 text-[10px] uppercase tracking-widest">Your Tracking Q-CODE:</p>
+                <div id="finalLoginCode" class="p-4 bg-slate-900 border border-cyan-500/30 rounded-xl text-2xl font-mono font-black text-cyan-400 italic">QC-XXXX</div>
+                <button onclick="window.location.href='/status'" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">View Status</button>
             </div>
         </div>
     </div>
@@ -112,10 +105,9 @@
             const iconDiv = document.getElementById('notifyIcon');
             const iconMap = {
                 'success': '<i data-lucide="check-circle" class="w-10 h-10 text-cyan-400"></i>',
-                'error': '<i data-lucide="alert-circle" class="w-10 h-10 text-red-400"></i>',
-                'info': '<i data-lucide="info" class="w-10 h-10 text-blue-400"></i>'
+                'error': '<i data-lucide="alert-circle" class="w-10 h-10 text-red-400"></i>'
             };
-            iconDiv.innerHTML = iconMap[icon] || iconMap.info;
+            iconDiv.innerHTML = iconMap[icon] || '<i data-lucide="info" class="w-10 h-10 text-blue-400"></i>';
             lucide.createIcons();
             modal.classList.remove('hidden');
         }
@@ -125,48 +117,35 @@
         function closeModal() { document.getElementById('authModal').classList.add('hidden'); }
 
         function toggleMode(mode) {
-            document.getElementById('emailSection').classList.toggle('hidden', mode === 'login');
-            document.getElementById('codeSection').classList.toggle('hidden', mode === 'join');
-            document.getElementById('verifySection').classList.add('hidden');
+            document.getElementById('quickJoinSection').classList.toggle('hidden', mode === 'login');
+            document.getElementById('codeSection').classList.toggle('hidden', mode === 'quick-join');
             document.getElementById('successSection').classList.add('hidden');
         }
 
-        async function requestOTP() {
-            const email = document.getElementById('userEmail').value;
-            if(!email) return showNotify("Required", "Enter email.", "info");
-            const btn = document.getElementById('otpBtn');
-            btn.innerText = "SENDING..."; btn.disabled = true;
-            try {
-                const res = await fetch('/api/auth/request-email-otp', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email })
-                });
-                if(res.ok) {
-                    document.getElementById('emailSection').classList.add('hidden');
-                    document.getElementById('verifySection').classList.remove('hidden');
-                } else {
-                    const d = await res.json(); showNotify("Failed", d.message, "error");
-                    btn.innerText = "SEND CODE"; btn.disabled = false;
-                }
-            } catch (e) { showNotify("Error", "Server unreachable.", "error"); btn.innerText = "SEND CODE"; btn.disabled = false; }
-        }
+        async function joinFrictionless() {
+            const service_code = document.getElementById('serviceCode').value;
+            const name = document.getElementById('visitorName').value;
+            if(!service_code) return showNotify("Required", "Enter Service Code.", "info");
 
-        async function verifyOTP() {
-            const otp = document.getElementById('otpValue').value;
+            const btn = document.getElementById('joinBtn');
+            btn.innerText = "JOINING..."; btn.disabled = true;
+
             try {
-                const res = await fetch('/api/auth/verify-email-otp', {
+                const res = await fetch('/api/auth/join-frictionless', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ otp })
+                    body: JSON.stringify({ service_code, name })
                 });
                 const data = await res.json();
                 if(data.status === 'success') {
-                    document.getElementById('verifySection').classList.add('hidden');
+                    document.getElementById('quickJoinSection').classList.add('hidden');
                     document.getElementById('successSection').classList.remove('hidden');
-                    document.getElementById('finalLoginCode').innerText = data.login_code;
-                } else { showNotify("Invalid", "Incorrect code.", "error"); }
-            } catch(e) { showNotify("Error", "Verification failed.", "error"); }
+                    document.getElementById('finalLoginCode').innerText = data.token;
+                } else {
+                    showNotify("Failed", data.message, "error");
+                    btn.innerText = "SECURE SPOT"; btn.disabled = false;
+                }
+            } catch (e) { showNotify("Error", "Server unreachable.", "error"); btn.innerText = "SECURE SPOT"; btn.disabled = false; }
         }
 
         async function loginWithCode() {
