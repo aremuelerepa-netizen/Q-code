@@ -69,7 +69,7 @@ def status_view():
 @app.route('/userpage')
 def user_dashboard():
     if 'user_id' not in session: return redirect(url_for('home'))
-    return render_template('userpage.html')
+    return render_template('Userpage.html')
 
 @app.route('/login')
 def login_view(): return render_template('login page.html')
@@ -301,3 +301,4 @@ def verify_completion():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
