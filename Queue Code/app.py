@@ -82,18 +82,24 @@ def register_org():
     password = data.get('password')
     
     try:
+        # 1. ALWAYS do the database part first
         db.table("organizations").insert({
             "name": name, "email": email, "phone": phone, 
             "password": password, "verified": False
         }).execute()
         
-        # Notify Super Admin (Non-blocking)
-        send_free_email(
-            os.getenv("ADMIN_EMAIL"), 
-            "New Org Application", 
-            f"Organization {name} is waiting for approval."
-        )
+        # 2. Try to send the email, but DON'T crash if it fails
+        try:
+            send_free_email(
+                os.getenv("ADMIN_EMAIL"), 
+                "New Org Application", 
+                f"Organization {name} is waiting for approval."
+            )
+        except Exception as email_err:
+            print(f"Non-critical Email Error: {email_err}")
+
         return jsonify({"status": "success", "message": "Application submitted!"})
+
     except Exception as e:
         print(f"REG ERROR: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -223,3 +229,4 @@ if __name__ == '__main__':
     # Render requires binding to 0.0.0.0 and using the $PORT environment variable
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
+
