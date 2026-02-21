@@ -15,9 +15,11 @@
         .animate-fade { animation: fadeIn 0.8s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Floating Advertisement Cartoon Styling */
         .cartoon-float { animation: float 6s ease-in-out infinite; }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+
+        .btn-google { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .btn-google:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
     </style>
 </head>
 <body class="min-h-screen bg-[#0f172a]">
@@ -82,18 +84,30 @@
             <div id="quickJoinSection" class="space-y-6 pt-4 hidden">
                 <div class="text-center">
                     <h3 class="text-xl font-black mb-1">Quick Join</h3>
-                    <p class="text-slate-400 text-xs">No account needed, Join Queue Now.</p>
+                    <p class="text-slate-400 text-xs">No account needed. Just your name.</p>
                 </div>
                 <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center font-bold" placeholder="SERVICE CODE">
                 <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-center" placeholder="YOUR NAME">
                 <button onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Secure Spot</button>
             </div>
 
-            <div id="loginSection" class="space-y-6 pt-4 hidden">
-                <div class="text-center">
+            <div id="loginSection" class="space-y-4 pt-4 hidden">
+                <div class="text-center mb-2">
                     <h3 class="text-xl font-black mb-1">Welcome Back</h3>
                     <p class="text-slate-400 text-xs">Sign in to your vault.</p>
                 </div>
+                
+                <button onclick="handleGoogleLogin()" class="btn-google w-full py-3 rounded-xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-4 h-4" alt="Google">
+                    Continue with Google
+                </button>
+
+                <div class="flex items-center gap-4 text-slate-600 my-2">
+                    <div class="h-px bg-white/5 flex-1"></div>
+                    <span class="text-[9px] font-bold">OR</span>
+                    <div class="h-px bg-white/5 flex-1"></div>
+                </div>
+
                 <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none" placeholder="Email Address">
                 <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none" placeholder="Password">
                 <button onclick="loginUser()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase tracking-widest text-[10px]">Sign In</button>
@@ -105,6 +119,18 @@
                     <h3 class="text-xl font-black mb-1">Join the Elite</h3>
                     <p class="text-slate-400 text-xs">One account for all Q-CODE locations.</p>
                 </div>
+
+                <button onclick="handleGoogleLogin()" class="btn-google w-full py-3 rounded-xl flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-4 h-4" alt="Google">
+                    Join with Google
+                </button>
+
+                <div class="flex items-center gap-4 text-slate-600 my-2">
+                    <div class="h-px bg-white/5 flex-1"></div>
+                    <span class="text-[9px] font-bold">OR</span>
+                    <div class="h-px bg-white/5 flex-1"></div>
+                </div>
+
                 <input type="email" id="regEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Email Address">
                 <input type="password" id="regPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Create Password">
                 <input type="password" id="regConfirm" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl focus:border-cyan-400 outline-none text-sm" placeholder="Confirm Password">
@@ -139,6 +165,11 @@
             if(mode === 'quick-join') document.getElementById('quickJoinSection').classList.remove('hidden');
             if(mode === 'login') document.getElementById('loginSection').classList.remove('hidden');
             if(mode === 'register') document.getElementById('registerSection').classList.remove('hidden');
+        }
+
+        // Logic for Google Redirect (Update URL to your backend route)
+        function handleGoogleLogin() {
+            window.location.href = "/api/auth/google";
         }
 
         async function joinFrictionless() {
