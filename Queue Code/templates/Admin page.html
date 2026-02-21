@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Q-Code Admin | Enterprise Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
@@ -291,9 +290,7 @@
         <header>
             <div style="display: flex; align-items: center; gap: 15px;">
                 <h2 id="page-title" style="font-weight: 800;">Monitor</h2>
-                <span
-                    style="background: rgba(34, 211, 238, 0.1); color: var(--accent-cyan); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;"
-                    id="header-org-badge">...</span>
+                <span style="background: rgba(34, 211, 238, 0.1); color: var(--accent-cyan); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;" id="header-org-badge">...</span>
             </div>
             <div id="live-clock" style="font-family: monospace; color: var(--accent-cyan); font-weight: bold;">00:00:00
             </div>
@@ -302,8 +299,7 @@
                     <div style="font-size:0.85rem; font-weight:800;" id="admin-user-name">Admin User</div>
                     <div style="font-size:0.7rem; color:var(--text-muted);">Status: Online</div>
                 </div>
-                <div
-                    style="width:40px; height:40px; background: #1e293b; border-radius:12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);">
+                <div style="width:40px; height:40px; background: #1e293b; border-radius:12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);">
                     <i data-lucide="user" size="18"></i>
                 </div>
             </div>
@@ -313,8 +309,7 @@
             <div class="card" style="max-width: 900px; margin: 0 auto;">
                 <div style="margin-bottom: 30px;">
                     <h3 style="font-size: 1.5rem; color: var(--accent-cyan);">Initialize New Service Node</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Setup operating windows and parameters for
-                        the AI queue.</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Setup operating windows and parameters for the AI queue.</p>
                 </div>
 
                 <div class="form-grid">
@@ -388,10 +383,8 @@
 
         // ORGANIZATION & AUTH LOGIC
         function loadOrganizationProfile() {
-            // Falls back to defaults if not found in storage
             const orgName = localStorage.getItem('qc_org_name') || "Apex Health Group";
             const adminName = localStorage.getItem('qc_admin_user') || "Admin Sarah";
-
             document.getElementById('sidebar-org-name').innerText = orgName;
             document.getElementById('header-org-badge').innerText = orgName;
             document.getElementById('admin-user-name').innerText = adminName;
@@ -399,10 +392,8 @@
 
         function handleLogout() {
             if (confirm("Are you sure you want to end your session?")) {
-                // Here you would clear tokens or Supabase session
                 localStorage.removeItem('qc_logged_in');
-                alert("Logging out...");
-                location.reload(); // Redirect to login in real app
+                location.reload();
             }
         }
 
@@ -436,16 +427,92 @@
             renderChips(type === 'staff' ? 'staff-chips' : 'info-chips', type === 'staff' ? currentStaff : currentInfoFields, type);
         }
 
+        // --- NEW LOGIC: SWITCHING TABS & LOADING SERVICES ---
         function switchTab(id, el) {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.getElementById('page-title').innerText = el.innerText;
+
+            // If user clicks "My Services", load them from the server
+            if (id === 'services') {
+                loadMyServices();
+            }
         }
 
-        function publishService() {
-            alert("Service Node initialized and live!");
+        // --- NEW LOGIC: PUBLISH TO SERVER ---
+        async function publishService() {
+            const name = document.getElementById('inp-service-name').value;
+            if (!name) return alert("Service Name is required!");
+
+            const serviceData = {
+                name: name,
+                start_time: document.getElementById('inp-start-time').value,
+                end_time: document.getElementById('inp-end-time').value,
+                avg_time: document.getElementById('inp-est-time').value,
+                staff: currentStaff,
+                fields: currentInfoFields
+            };
+
+            try {
+                const res = await fetch('/api/services/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(serviceData)
+                });
+                const result = await res.json();
+                
+                if (result.status === 'success') {
+                    alert("Service Node initialized and live!");
+                    // Clear form
+                    document.getElementById('inp-service-name').value = '';
+                    currentStaff = [];
+                    renderChips('staff-chips', [], 'staff');
+                    // Move to services tab
+                    const servicesNavItem = document.querySelector('[onclick*="services"]');
+                    switchTab('services', servicesNavItem);
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (err) {
+                alert("Server Connection Failed");
+            }
+        }
+
+        // --- NEW LOGIC: FETCH FROM SERVER ---
+        async function loadMyServices() {
+            const container = document.getElementById('services');
+            container.innerHTML = '<div class="card">Syncing nodes...</div>';
+
+            try {
+                const res = await fetch('/api/services/list');
+                const services = await res.json();
+
+                if (services.length === 0) {
+                    container.innerHTML = '<div class="card">No active service nodes found.</div>';
+                    return;
+                }
+
+                container.innerHTML = services.map(s => `
+                    <div class="card" style="display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--accent-cyan);">
+                        <div>
+                            <h3 style="color: var(--accent-cyan); margin-bottom: 5px;">${s.name}</h3>
+                            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                                <i data-lucide="clock" size="14"></i> ${s.start_time} - ${s.end_time} 
+                                &nbsp;&nbsp; | &nbsp;&nbsp; 
+                                <i data-lucide="users" size="14"></i> ${s.staff_list ? s.staff_list.length : 0} Staff
+                            </p>
+                        </div>
+                        <div class="chip" style="background: rgba(34, 211, 238, 0.1)">ACTIVE</div>
+                    </div>
+                `).join('');
+                
+                // Refresh icons for new cards
+                lucide.createIcons();
+            } catch (err) {
+                container.innerHTML = '<div class="card" style="color: var(--danger)">Failed to load services.</div>';
+            }
         }
 
         // Init
