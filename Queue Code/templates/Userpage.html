@@ -12,7 +12,6 @@
         .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
         .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.2s; }
         
-        /* Status Ring Animation */
         .status-ring {
             width: 200px;
             height: 200px;
@@ -64,8 +63,7 @@
                     </div>
                 </div>
 
-                <div id="queue-container" class="space-y-12">
-                    </div>
+                <div id="queue-container" class="space-y-12"></div>
             </section>
         </main>
 
@@ -78,12 +76,9 @@
     <script>
         lucide.createIcons();
 
-        // 1. IDENTITY LOGIC: Automatically set the user's name
         window.onload = () => {
-            // Priority: LocalStorage Name -> URL Param -> Default Guest
             const savedName = localStorage.getItem('user_name') || 'Guest User';
             document.getElementById('user-display-name').innerText = savedName;
-
             renderActiveQueues();
         };
 
@@ -95,11 +90,10 @@
         function handleLogout() {
             if(confirm("Are you sure you want to logout?")) {
                 localStorage.clear();
-                window.location.href = "/login"; // Redirect to your login page
+                window.location.href = "/login";
             }
         }
 
-        // 2. QUEUE LOGIC: The Big Circles
         function renderActiveQueues() {
             const container = document.getElementById('queue-container');
             const tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
@@ -130,17 +124,18 @@
                     </button>
                 </div>
             `).join('<hr class="border-white/5 my-10">');
+
+            lucide.createIcons();
         }
 
         async function handleJoin() {
             const code = document.getElementById('joinInput').value.trim().toUpperCase();
             if(!code) return;
 
-            // Simulate API call (replace with your actual fetch)
             const mockResponse = {
                 status: 'success',
                 ticket_id: 'TK-' + Math.random().toString(36).substr(2, 5),
-                service_name: 'Tech Support', // This would come from your DB
+                service_name: 'Tech Support',
                 position: 5
             };
 
@@ -149,6 +144,13 @@
             localStorage.setItem('active_tickets', JSON.stringify(tickets));
             
             document.getElementById('joinInput').value = '';
+            renderActiveQueues();
+        }
+
+        function leaveQueue(ticketId) {
+            let tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
+            tickets = tickets.filter(t => t.ticket_id !== ticketId);
+            localStorage.setItem('active_tickets', JSON.stringify(tickets));
             renderActiveQueues();
         }
     </script>
