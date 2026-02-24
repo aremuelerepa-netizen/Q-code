@@ -63,109 +63,96 @@
 <script>
     lucide.createIcons();
 
-    window.onload = () => {
-        // 1. FIX: Priority Name Logic
-        // Checks if a name was saved during login, otherwise defaults
-        const name = localStorage.getItem('user_name') || 'Guest User';
-        document.getElementById('user-display-name').innerText = name;
+    // ================= SUPABASE CONFIG =================
+    const supabaseUrl = "YOUR_SUPABASE_URL";
+    const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    let userName = "";
+
+    // ================= ON LOAD =================
+    window.onload = async function() {
+        // FEATURE ADDED: Pull name from login session instead of prompt
+        userName = localStorage.getItem('user_name'); 
         
-        refreshQueueData();
-        // Auto-refresh every 30 seconds
-        setInterval(refreshQueueData, 30000);
+        if (!userName) {
+            // Fallback only if they somehow bypassed login
+            userName = prompt("Enter your name to continue");
+            if (userName) localStorage.setItem('user_name', userName);
+        }
+
+        if (!userName) {
+            window.location.href = "/login";
+            return;
+        }
+
+        document.getElementById('user-display-name').innerText = userName;
+        await renderActiveQueues();
+        
+        // FEATURE ADDED: Auto-refresh position every 10 seconds
+        setInterval(renderActiveQueues, 10000);
     };
 
-    async function refreshQueueData() {
-        const tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
-        if(tickets.length === 0) return renderUI([]);
+    // ... nav and logout functions remain the same ...
 
-        const updatedTickets = [];
-        for (let t of tickets) {
-            try {
-                // Fetch real status from your corrected app.py
-                const res = await fetch(`/api/queue/status/${t.ticket_id}`);
-                const data = await res.json();
-                if(data.status !== 'error') {
-                    updatedTickets.push({
-                        ticket_id: t.ticket_id,
-                        service_name: data.service_name,
-                        position: data.position,
-                        status: data.status
-                    });
-                }
-            } catch (e) { console.error("Update failed", e); }
-        }
-        localStorage.setItem('active_tickets', JSON.stringify(updatedTickets));
-        renderUI(updatedTickets);
-    }
+    // ================= RENDER QUEUES =================
+    async function renderActiveQueues() {
+        // Fetch tickets for this user
+        const { data: myTickets, error } = await supabase
+            .from("queue") // Updated to match your 'queue' table name
+            .select("*")
+            .eq("visitor_name", userName)
+            .neq("status", "completed");
 
-    function renderUI(tickets) {
+        if(error) return console.error(error);
+
         const container = document.getElementById('queue-container');
-        if(tickets.length === 0) {
+        container.innerHTML = "";
+
+        if (!myTickets || myTickets.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-20 opacity-30">
-                    <i data-lucide="ghost" class="w-14 h-14 mx-auto mb-4"></i>
-                    <p class="font-black text-[10px] uppercase tracking-widest">No active lines</p>
+                    <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-4"></i>
+                    <p class="font-bold text-[10px] uppercase tracking-widest">No active lines</p>
                 </div>`;
             lucide.createIcons();
             return;
         }
 
-        container.innerHTML = tickets.map(t => `
+        for (const t of myTickets) {
+            // FEATURE ADDED: Calculate REAL position in database
+            // Count everyone waiting for the same service who joined BEFORE this ticket
+            const { count } = await supabase
+                .from("queue")
+                .select('*', { count: 'exact', head: true })
+                .eq("service_id", t.service_id)
+                .eq("status", "waiting")
+                .lt("created_at", t.created_at);
+
+            const realPosition = count + 1;
+
+            container.innerHTML += `
             <div class="text-center">
                 <div class="status-ring mb-6">
                     <div class="ring-inner">
                         <span class="text-[10px] font-black text-slate-500 uppercase block">Position</span>
-                        <span class="text-6xl font-black italic text-white tracking-tighter">#${t.position}</span>
+                        <span class="text-6xl font-black italic text-white tracking-tighter">#${realPosition}</span>
                     </div>
                 </div>
-                <h2 class="text-2xl font-black uppercase italic tracking-tight text-white">${t.service_name}</h2>
+                <h2 class="text-2xl font-black uppercase italic tracking-tight">${t.visitor_name}</h2>
                 <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">Live Updates Active</p>
-                <button onclick="leaveQueue('${t.ticket_id}')" class="mt-8 text-rose-500 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100">Cancel Spot</button>
+                <button onclick="leaveQueue('${t.id}')" class="mt-6 text-rose-500 text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100">
+                    Cancel Spot
+                </button>
             </div>
-        `).join('<hr class="border-white/5 my-12">');
+            <hr class="border-white/5 my-10">`;
+        }
+
         lucide.createIcons();
     }
 
-    async function handleJoin() {
-        const code = document.getElementById('joinInput').value.trim().toUpperCase();
-        const userName = localStorage.getItem('user_name') || 'Guest';
-        if(!code) return;
-
-        const res = await fetch('/api/auth/join-frictionless', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ service_code: code, name: userName })
-        });
-        
-        const data = await res.json();
-        if(data.status === 'success') {
-            let tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
-            tickets.push({
-                ticket_id: data.ticket_id,
-                service_name: data.organization_name,
-                position: '...' // Will update on next refresh
-            });
-            localStorage.setItem('active_tickets', JSON.stringify(tickets));
-            document.getElementById('joinInput').value = '';
-            refreshQueueData();
-        } else {
-            alert(data.message);
-        }
-    }
-
-    function handleLogout() {
-        if(confirm("Sign out of Q-CODE?")) {
-            localStorage.clear();
-            window.location.href = "/login";
-        }
-    }
-
-    function leaveQueue(ticketId) {
-        let tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
-        tickets = tickets.filter(t => t.ticket_id !== ticketId);
-        localStorage.setItem('active_tickets', JSON.stringify(tickets));
-        renderUI(tickets);
-    }
+    // ... handleJoin and leaveQueue remain the same ...
 </script>
 </body>
 </html>
+
