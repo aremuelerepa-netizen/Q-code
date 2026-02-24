@@ -1,105 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<title>Q-CODE | Live Status</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow-x: hidden; }
-    .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 2rem; }
-    .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.2s; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-    .status-ring { width: 220px; height: 220px; border-radius: 50%; border: 8px solid rgba(34, 211, 238, 0.15); border-top-color: #22d3ee; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; animation: spin 2s linear infinite; }
-    .ring-inner { animation: counter-spin 2s linear infinite; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    @keyframes counter-spin { 100% { transform: rotate(-360deg); } }
-    .page { display: none; animation: fadeIn 0.4s ease-out; }
-    .page.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .logout-btn { font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Q-CODE | Live Status</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow-x: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 2rem; }
+        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.2s; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .status-ring { width: 220px; height: 220px; border-radius: 50%; border: 8px solid rgba(34, 211, 238, 0.15); border-top-color: #22d3ee; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; animation: spin 2s linear infinite; }
+        .ring-inner { animation: counter-spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes counter-spin { 100% { transform: rotate(-360deg); } }
+        .page { display: none; animation: fadeIn 0.4s ease-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
 
 <div class="max-w-[450px] mx-auto min-h-screen flex flex-col relative">
 
-    <!-- Header -->
     <header class="p-5 flex justify-between items-center glass sticky top-0 z-50 shadow-lg shadow-cyan-500/20">
         <div class="flex items-center gap-3">
             <div class="w-12 h-12 btn-cyan rounded-xl flex items-center justify-center shadow-xl shadow-cyan-500/30">
                 <i data-lucide="zap" class="w-6 h-6 text-slate-900"></i>
             </div>
             <div>
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Q-CODE</span>
-                <span id="user-display-name" class="text-lg md:text-xl font-extrabold text-white uppercase">User</span>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">Q-CODE</span>
+                <span id="user-display-name" class="text-lg font-extrabold text-white uppercase tracking-tight">User</span>
             </div>
         </div>
-        <button onclick="handleLogout()" class="w-12 h-12 rounded-xl bg-rose-500/20 border border-white/10 flex items-center justify-center logout-btn hover:bg-rose-500/40 transition">
-            <i data-lucide="log-out" class="w-6 h-6 text-white"></i>
+        <button onclick="handleLogout()" class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center hover:bg-rose-500/20 transition">
+            <i data-lucide="log-out" class="w-6 h-6 text-rose-500"></i>
         </button>
     </header>
 
-    <!-- Main -->
     <main class="flex-1 p-6 pb-32">
         <section id="page-home" class="page active">
-            
-            <!-- Quick Join -->
             <div class="mb-12">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">New Check-in</label>
                 <div class="glass p-3 rounded-3xl flex gap-3">
-                    <input type="text" id="joinInput" placeholder="SERVICE CODE" class="flex-1 bg-transparent px-4 py-3 font-extrabold text-white text-center outline-none uppercase tracking-wide text-sm md:text-base rounded-xl">
-                    <button onclick="handleJoin()" class="btn-cyan px-6 py-3 rounded-2xl text-slate-900 text-[12px] md:text-sm uppercase shadow-lg shadow-cyan-500/30">
-                        Join
-                    </button>
+                    <input type="text" id="joinInput" placeholder="SERVICE CODE" class="flex-1 bg-transparent px-4 font-extrabold text-white text-center outline-none uppercase tracking-widest">
+                    <button onclick="handleJoin()" class="btn-cyan px-6 py-3 rounded-2xl text-slate-900 text-[12px] shadow-lg shadow-cyan-500/30">Join</button>
                 </div>
             </div>
 
-            <!-- Active Queues -->
-            <div id="queue-container" class="space-y-16"></div>
+            <div id="queue-container" class="space-y-16">
+                </div>
         </section>
     </main>
 
-    <!-- Bottom Nav -->
     <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-[400px] h-20 glass rounded-[2.5rem] flex justify-around items-center z-40 border-white/10 shadow-2xl">
         <button onclick="nav('home')" class="text-cyan-400"><i data-lucide="home" class="w-6 h-6"></i></button>
-        <button onclick="location.reload()" class="text-slate-500"><i data-lucide="refresh-cw" class="w-6 h-6"></i></button>
+        <button onclick="refreshQueueData()" class="text-slate-500"><i data-lucide="refresh-cw" class="w-6 h-6"></i></button>
     </nav>
-
 </div>
 
 <script>
     lucide.createIcons();
 
-    // Load user info & active tickets
     window.onload = () => {
-        const savedName = localStorage.getItem('visitor_name') || 'Guest User';
-        document.getElementById('user-display-name').innerText = savedName;
-        renderActiveQueues();
+        // 1. FIX: Priority Name Logic
+        // Checks if a name was saved during login, otherwise defaults
+        const name = localStorage.getItem('user_name') || 'Guest User';
+        document.getElementById('user-display-name').innerText = name;
+        
+        refreshQueueData();
+        // Auto-refresh every 30 seconds
+        setInterval(refreshQueueData, 30000);
     };
 
-    function nav(pageId) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-' + pageId).classList.add('active');
-    }
-
-    function handleLogout() {
-        if(confirm("Are you sure you want to logout?")) {
-            localStorage.clear();
-            window.location.href = "/login";
-        }
-    }
-
-    function renderActiveQueues() {
-        const container = document.getElementById('queue-container');
+    async function refreshQueueData() {
         const tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
+        if(tickets.length === 0) return renderUI([]);
 
+        const updatedTickets = [];
+        for (let t of tickets) {
+            try {
+                // Fetch real status from your corrected app.py
+                const res = await fetch(`/api/queue/status/${t.ticket_id}`);
+                const data = await res.json();
+                if(data.status !== 'error') {
+                    updatedTickets.push({
+                        ticket_id: t.ticket_id,
+                        service_name: data.service_name,
+                        position: data.position,
+                        status: data.status
+                    });
+                }
+            } catch (e) { console.error("Update failed", e); }
+        }
+        localStorage.setItem('active_tickets', JSON.stringify(updatedTickets));
+        renderUI(updatedTickets);
+    }
+
+    function renderUI(tickets) {
+        const container = document.getElementById('queue-container');
         if(tickets.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-20 opacity-50">
+                <div class="text-center py-20 opacity-30">
                     <i data-lucide="ghost" class="w-14 h-14 mx-auto mb-4"></i>
-                    <p class="font-black text-[12px] uppercase tracking-widest">No active lines</p>
+                    <p class="font-black text-[10px] uppercase tracking-widest">No active lines</p>
                 </div>`;
             lucide.createIcons();
             return;
@@ -109,49 +114,58 @@
             <div class="text-center">
                 <div class="status-ring mb-6">
                     <div class="ring-inner">
-                        <span class="text-[10px] font-black text-slate-400 uppercase block">Position</span>
+                        <span class="text-[10px] font-black text-slate-500 uppercase block">Position</span>
                         <span class="text-6xl font-black italic text-white tracking-tighter">#${t.position}</span>
                     </div>
                 </div>
-                <h2 class="text-2xl md:text-3xl font-black uppercase italic tracking-tight">${t.service_name}</h2>
-                <p class="text-[10px] md:text-sm text-cyan-400 font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">Live Updates Active</p>
-                
-                <button onclick="leaveQueue('${t.ticket_id}')" class="mt-6 text-rose-500 text-[12px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition">
-                    Cancel Spot
-                </button>
+                <h2 class="text-2xl font-black uppercase italic tracking-tight text-white">${t.service_name}</h2>
+                <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">Live Updates Active</p>
+                <button onclick="leaveQueue('${t.ticket_id}')" class="mt-8 text-rose-500 text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100">Cancel Spot</button>
             </div>
-        `).join('<hr class="border-white/10 my-12">');
-
+        `).join('<hr class="border-white/5 my-12">');
         lucide.createIcons();
     }
 
-    function handleJoin() {
+    async function handleJoin() {
         const code = document.getElementById('joinInput').value.trim().toUpperCase();
+        const userName = localStorage.getItem('user_name') || 'Guest';
         if(!code) return;
 
-        // Mock API response
-        const mockResponse = {
-            status: 'success',
-            ticket_id: 'TK-' + Math.random().toString(36).substr(2, 5),
-            service_name: 'Tech Support',
-            position: 5
-        };
+        const res = await fetch('/api/auth/join-frictionless', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ service_code: code, name: userName })
+        });
+        
+        const data = await res.json();
+        if(data.status === 'success') {
+            let tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
+            tickets.push({
+                ticket_id: data.ticket_id,
+                service_name: data.organization_name,
+                position: '...' // Will update on next refresh
+            });
+            localStorage.setItem('active_tickets', JSON.stringify(tickets));
+            document.getElementById('joinInput').value = '';
+            refreshQueueData();
+        } else {
+            alert(data.message);
+        }
+    }
 
-        let tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
-        tickets.push(mockResponse);
-        localStorage.setItem('active_tickets', JSON.stringify(tickets));
-
-        document.getElementById('joinInput').value = '';
-        renderActiveQueues();
+    function handleLogout() {
+        if(confirm("Sign out of Q-CODE?")) {
+            localStorage.clear();
+            window.location.href = "/login";
+        }
     }
 
     function leaveQueue(ticketId) {
         let tickets = JSON.parse(localStorage.getItem('active_tickets') || "[]");
         tickets = tickets.filter(t => t.ticket_id !== ticketId);
         localStorage.setItem('active_tickets', JSON.stringify(tickets));
-        renderActiveQueues();
+        renderUI(tickets);
     }
 </script>
-
 </body>
 </html>
