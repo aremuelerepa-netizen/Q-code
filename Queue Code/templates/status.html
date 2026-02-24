@@ -1,3 +1,4 @@
+next file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +7,6 @@
     <title>Live Status | Q-CODE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: white; margin: 0; overflow-x: hidden; }
@@ -63,7 +63,6 @@
         <button onclick="confirmExit()" class="w-full py-4 text-rose-500/50 text-[10px] font-black uppercase tracking-widest">Leave Queue & Reset</button>
     </main>
 
-    <!-- Modals (unchanged) -->
     <div id="notifModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-8 modal-backdrop">
         <div class="glass w-full max-w-sm rounded-[3rem] p-10 text-center space-y-6">
             <div class="w-16 h-16 bg-cyan-400/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto">
@@ -99,56 +98,44 @@
     <script>
         lucide.createIcons();
 
-        // ================= SUPABASE CONFIG =================
-        const supabaseUrl = "YOUR_SUPABASE_URL";
-        const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        let ticketId = localStorage.getItem('active_ticket_id');
-        let visitorName = localStorage.getItem('visitor_name') || prompt("Enter your name") || "Guest User";
-        localStorage.setItem('visitor_name', visitorName);
+        // 1. Storage Logic: Restore Session
+        const ticketId = localStorage.getItem('active_ticket_id');
+        const visitorName = localStorage.getItem('visitor_name') || 'Guest User';
         document.getElementById('user-ref').innerText = visitorName;
 
         if (!ticketId) {
-            window.location.href = '/'; // Redirect to join page if no active ticket
+            window.location.href = '/'; // If no active ticket, go back to join page
         }
 
-        // ================= UPDATE STATUS =================
+        // 2. Refresh/Polling Logic
         async function updateStatus() {
             try {
-                const { data, error } = await supabase
-                    .from('queues')
-                    .select('*')
-                    .eq('id', ticketId)
-                    .single();
-
-                if (error || !data) return;
-
-                document.getElementById('position-num').innerText = "#" + data.position;
-                document.getElementById('service-name').innerText = data.queue_name;
-                document.getElementById('ahead-count').innerText = (data.position > 0 ? (data.position - 1) + " People" : "None");
-                
-                if (data.position === 0 || data.status === 'serving') {
-                    document.getElementById('endCodeModal').classList.remove('hidden');
-                }
-
-                document.getElementById('status-text').innerText = (data.status === 'completed') ? 'Completed' : 'Active';
-                document.getElementById('status-text').className = data.status === 'completed' ? 'text-sm font-bold text-rose-400' : 'text-sm font-bold text-green-400';
+                const res = await fetch(`/api/queue/status/${ticketId}`);
+                const data = await res.json();
 
                 if (data.status === 'completed') {
                     localStorage.removeItem('active_ticket_id');
-                    showModal('Done!', 'Your session is complete.');
-                    setTimeout(() => window.location.href = '/', 2000);
+                    window.location.href = '/';
+                    return;
+                }
+
+                document.getElementById('position-num').innerText = "#" + data.position;
+                document.getElementById('service-name').innerText = data.service_name;
+                document.getElementById('ahead-count').innerText = (data.position > 0) ? (data.position - 1) + " People" : "None";
+                
+                // Trigger End Code Modal if it's their turn
+                if (data.position === 0 || data.status === 'serving') {
+                    document.getElementById('endCodeModal').classList.remove('hidden');
                 }
             } catch (e) {
-                console.error("Status Sync Failed", e);
+                console.error("Status Sync Failed");
             }
         }
 
-        setInterval(updateStatus, 5000);
+        setInterval(updateStatus, 5000); // Check every 5 seconds
         updateStatus();
 
-        // ================= MODALS =================
+        // 3. Modals
         function showModal(title, msg) {
             document.getElementById('notif-title').innerText = title;
             document.getElementById('notif-msg').innerText = msg;
@@ -161,25 +148,19 @@
 
         async function verifyEndCode() {
             const endCode = document.getElementById('endCodeInput').value.trim().toUpperCase();
-
-            const { data, error } = await supabase
-                .from('queues')
-                .select('*')
-                .eq('id', ticketId)
-                .single();
-
-            if (!data || error) {
-                showModal('Error', 'Unable to fetch ticket info.');
-                return;
-            }
-
-            if (data.end_code.toUpperCase() === endCode) {
-                await supabase.from('queues').update({ status: 'completed' }).eq('id', ticketId);
+            const res = await fetch('/api/queue/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ticket_id: ticketId, end_code: endCode })
+            });
+            const data = await res.json();
+            
+            if (data.status === 'success') {
                 localStorage.removeItem('active_ticket_id');
-                showModal('Done!', 'Your session is complete.');
+                showModal('Done!', 'Your session is complete. Thank you!');
                 setTimeout(() => window.location.href = '/', 2000);
             } else {
-                showModal('Incorrect Code', 'The end code does not match. Ask admin.');
+                showModal('Incorrect Code', 'The end code provided does not match. Please ask the administrator.');
             }
         }
 
