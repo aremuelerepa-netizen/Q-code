@@ -1,15 +1,22 @@
 import os
-from flask import Flask, request, jsonify, render_template, redirect
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from supabase import create_client, Client
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "qcode_secure_key_777")
 
-# --- SUPABASE CONFIG ---
+# --- 1. CONFIGURATION (Environment Variables) ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
+
+# Master Admin credentials set in Render/Host environment
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- FRONTEND ROUTES ---
+# --- 2. FRONTEND ROUTES (Page Rendering) ---
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -26,31 +33,28 @@ def admin_dashboard():
 def login_page():
     return render_template('login page.html')
 
-@app.route('/admin-login') # Created specific route for Admin
-def admin_login_page():
-    return render_template('admin-login.html')
-
 @app.route('/userpage')
 def userpage():
     return render_template('Userpage.html')
 
 @app.route('/register')
-def register_page():
+def register_page_view():  # Renamed to avoid duplicate function error
     return render_template('org reg page.html')
 
 @app.route('/masteradmin')
-def register_page():
+def master_admin_view(): # Unique function name
     return render_template('super_admin.html')
+
 # --- 3. THE OFFLINE WEBHOOK (SMS Receiver) ---
-# This is what handles users joining via text message
+
 @app.route('/webhook/sms', methods=['POST'])
 def sms_webhook():
     try:
-        # Most SMS providers send data as Form Data, not JSON
-        incoming_msg = request.values.get('Body', '').strip().upper()  # The Service Code (e.g., UCH01)
-        sender_number = request.values.get('From', 'Unknown')          # User's Phone Number
+        # Receives SMS body (Service Code) and Sender Phone
+        incoming_msg = request.values.get('Body', '').strip().upper()
+        sender_number = request.values.get('From', 'Unknown')
 
-        # 1. Find the service in Supabase
+        # Find service by its public code
         service_query = supabase.table('services').select('*').eq('service_code', incoming_msg).execute()
         
         if not service_query.data:
@@ -58,44 +62,67 @@ def sms_webhook():
         else:
             service = service_query.data[0]
             
-            # 2. Add them to the queue
+            # Create queue entry for offline user
             new_entry = {
                 "service_id": service['id'],
-                "visitor_name": f"SMS User ({sender_number[-4:]})", # Uses last 4 digits of phone
+                "visitor_name": f"SMS User ({sender_number[-4:]})",
                 "status": "waiting",
-                "metadata": {"phone": sender_number} # Store phone for notifications
+                "metadata": {"phone": sender_number},
+                "entry_type": "SMS"
             }
             ticket = supabase.table('queue').insert(new_entry).execute()
             
-            # 3. Calculate position
+            # Position calculation
             ahead = supabase.table('queue').select('id', count='exact')\
                 .eq('service_id', service['id'])\
                 .eq('status', 'waiting')\
                 .lt('created_at', ticket.data[0]['created_at']).execute()
             
             pos = ahead.count + 1
-            response_msg = f"Success! You are joined to {service['service_name']}. Your position is #{pos}. We will text you when it is your turn."
+            response_msg = f"Success! Joined {service['service_name']}. Your position is #{pos}."
 
-        # Return the response in a format the SMS provider understands (TwiML for Twilio)
-        # If you use a different provider, this format might change to a simple string
         return f"<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Message>{response_msg}</Message></Response>"
-
     except Exception as e:
-        print(f"SMS Webhook Error: {e}")
         return "Error", 500
 
-# --- 4. AUTH & OTHER APIS ---
+# --- 4. AUTH & QUEUE API LOGIC ---
+
 @app.route('/api/auth/login', methods=['POST'])
-def api_login():
-    data = request.json
-    if data.get('email') == ADMIN_EMAIL and data.get('password') == ADMIN_PASSWORD:
-        return jsonify({"status": "success", "redirect": "/masteradmin"})
-    
+def combined_login():
+    """Checks Master Admin first, then Supabase Auth"""
     try:
-        res = supabase.auth.sign_in_with_password({"email": data.get('email'), "password": data.get('password')})
-        return jsonify({"status": "success", "redirect": "/dashboard"})
-    except:
-        return jsonify({"status": "error", "message": "Login Failed"}), 401
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+
+        # 1. Check Master Admin (Environment Variable)
+        if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
+            return jsonify({"status": "success", "redirect": "/masteradmin", "role": "master"})
+
+        # 2. Check Standard Supabase Auth
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        return jsonify({"status": "success", "redirect": "/dashboard", "session": res.session.access_token})
+    except Exception as e:
+        return jsonify({"status": "error", "message": "Invalid Credentials"}), 401
+
+@app.route('/api/queue/status/<ticket_id>', methods=['GET'])
+def get_status(ticket_id):
+    try:
+        ticket = supabase.table('queue').select('*, services(service_name)').eq('id', ticket_id).single().execute()
+        if not ticket.data: return jsonify({"status": "error"}), 404
+        
+        ahead = supabase.table('queue').select('id', count='exact')\
+            .eq('service_id', ticket.data['service_id'])\
+            .eq('status', 'waiting')\
+            .lt('created_at', ticket.data['created_at']).execute()
+
+        return jsonify({
+            "status": ticket.data['status'],
+            "position": 0 if ticket.data['status'] == 'serving' else (ahead.count + 1),
+            "service_name": ticket.data['services']['service_name']
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # --- 5. STARTUP ---
 if __name__ == "__main__":
