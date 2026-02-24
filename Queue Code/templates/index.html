@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Q-CODE | Premium Queue Management</title>
+    <title>Q-CODE | Fast Queue</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -14,7 +14,6 @@
         .text-gradient { background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .cartoon-float { animation: float 6s ease-in-out infinite; }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
-        .btn-google { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="min-h-screen bg-[#0f172a]">
@@ -47,7 +46,7 @@
 
         <h1 class="text-5xl md:text-7xl font-black mb-4">Wait Less, <br><span class="text-gradient">Live More.</span></h1>
         
-        <button onclick="openModal('quick-join')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase mb-12">
+        <button onclick="openModal('quickJoin')" class="btn-cyan w-full max-w-[280px] py-4 rounded-xl text-slate-950 font-extrabold text-xs uppercase mb-12">
             Join a Queue Fast
         </button>
 
@@ -65,26 +64,23 @@
 
             <div id="quickJoinSection" class="space-y-6 pt-4 hidden">
                 <h3 class="text-xl font-black text-center uppercase">Quick Join</h3>
-                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center uppercase font-bold" placeholder="SERVICE CODE">
-                <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center" placeholder="YOUR NAME">
+                <input type="text" id="serviceCode" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center uppercase font-bold text-white outline-none focus:border-cyan-400" placeholder="SERVICE CODE">
+                <input type="text" id="visitorName" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-center text-white outline-none focus:border-cyan-400" placeholder="YOUR NAME">
                 <button onclick="joinFrictionless()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Secure Spot</button>
             </div>
 
             <div id="loginSection" class="space-y-4 pt-4 hidden">
                 <h3 class="text-xl font-black text-center uppercase">Welcome Back</h3>
-                <button class="btn-google w-full py-3 rounded-xl flex items-center justify-center gap-3 text-xs font-bold uppercase">
-                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-4 h-4"> Google Login
-                </button>
-                <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Email">
-                <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Password">
+                <input type="email" id="loginEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-white outline-none" placeholder="Email">
+                <input type="password" id="loginPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-white outline-none" placeholder="Password">
                 <button onclick="loginUser()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Sign In</button>
                 <p class="text-center text-[10px] text-slate-500 font-bold uppercase">New? <span onclick="toggleAuth('register')" class="text-cyan-400 cursor-pointer">Create Account</span></p>
             </div>
 
             <div id="registerSection" class="space-y-4 pt-4 hidden">
                 <h3 class="text-xl font-black text-center uppercase">Create Vault</h3>
-                <input type="email" id="regEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Email">
-                <input type="password" id="regPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl" placeholder="Password">
+                <input type="email" id="regEmail" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-white outline-none" placeholder="Email">
+                <input type="password" id="regPass" class="w-full bg-slate-900/50 border border-white/10 p-4 rounded-xl text-white outline-none" placeholder="Password">
                 <button onclick="registerPersonalAccount()" class="w-full py-4 btn-cyan text-slate-950 font-black rounded-xl uppercase text-[10px]">Register</button>
                 <p class="text-center text-[10px] text-slate-500 font-bold uppercase">Already have one? <span onclick="toggleAuth('login')" class="text-cyan-400 cursor-pointer">Login</span></p>
             </div>
@@ -93,25 +89,35 @@
 
     <script>
         lucide.createIcons();
+
         function notify(msg) {
             const box = document.getElementById('notifBox');
             document.getElementById('notifMessage').innerText = msg;
             box.classList.remove('hidden');
             setTimeout(() => box.classList.add('hidden'), 3000);
         }
+
         function openModal(mode) {
             document.getElementById('authModal').classList.remove('hidden');
             toggleAuth(mode);
         }
+
         function closeModal() { document.getElementById('authModal').classList.add('hidden'); }
+
         function toggleAuth(mode) {
-            ['quickJoinSection', 'loginSection', 'registerSection'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            // Fix: Ensured IDs match the HTML elements exactly
+            ['quickJoinSection', 'loginSection', 'registerSection'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
             document.getElementById(mode + 'Section').classList.remove('hidden');
         }
 
         async function joinFrictionless() {
-            const service_code = document.getElementById('serviceCode').value;
-            const name = document.getElementById('visitorName').value;
+            const service_code = document.getElementById('serviceCode').value.trim().upper();
+            const name = document.getElementById('visitorName').value.trim();
+            
+            if(!service_code || !name) return notify("Please fill all fields");
+
             const res = await fetch('/api/auth/join-frictionless', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -120,6 +126,8 @@
             const data = await res.json();
             if(data.status === 'success') {
                 localStorage.setItem('active_ticket_id', data.ticket_id);
+                // Save name for the status page circle
+                localStorage.setItem('user_name', name); 
                 window.location.href = '/status';
             } else notify(data.message);
         }
@@ -127,14 +135,21 @@
         async function loginUser() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
-            const res = await fetch('/api/auth/user-login', {
+            
+            const res = await fetch('/api/auth/login', { // Changed to unified_login endpoint
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email, password, role: 'user' })
             });
             const data = await res.json();
-            if(data.status === 'success') window.location.href = '/userpage';
-            else notify(data.message);
+            
+            if(data.status === 'success') {
+                localStorage.setItem('session_token', data.session);
+                localStorage.setItem('user_name', data.user_name); // Save generated name
+                window.location.href = data.redirect;
+            } else {
+                notify(data.message);
+            }
         }
 
         async function registerPersonalAccount() {
@@ -146,8 +161,10 @@
                 body: JSON.stringify({ email, password })
             });
             const data = await res.json();
-            if(data.status === 'success') notify("Check your email!");
-            else notify(data.message);
+            if(data.status === 'success') {
+                notify("Verification required. Moving to login...");
+                setTimeout(() => toggleAuth('login'), 2000);
+            } else notify(data.message);
         }
     </script>
 </body>
