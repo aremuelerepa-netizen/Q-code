@@ -38,157 +38,66 @@ def userpage():
 def register_page():
     return render_template('org reg page.html')
 
-# --- SMS GATEWAY WEBHOOK ---
-@app.route('/api/sms/webhook', methods=['POST'])
+@app.route('/masteradmin')
+def register_page():
+    return render_template('super_admin.html')
+# --- 3. THE OFFLINE WEBHOOK (SMS Receiver) ---
+# This is what handles users joining via text message
+@app.route('/webhook/sms', methods=['POST'])
 def sms_webhook():
-    """
-    HANDLES OFFLINE USERS:
-    The user texts a Service Code (e.g., 'TECH101') to your number.
-    """
     try:
-        # 1. Get data from the SMS Gateway (Standard form-data)
-        sender_phone = request.form.get('From')  # The user's phone number
-        message_body = request.form.get('Body', '').strip().upper() # The Service Code
+        # Most SMS providers send data as Form Data, not JSON
+        incoming_msg = request.values.get('Body', '').strip().upper()  # The Service Code (e.g., UCH01)
+        sender_number = request.values.get('From', 'Unknown')          # User's Phone Number
 
-        if not message_body:
-            return "Empty message", 400
-
-        # 2. Find the service associated with the texted code
-        service_query = supabase.table('services').select('*').eq('service_code', message_body).single().execute()
+        # 1. Find the service in Supabase
+        service_query = supabase.table('services').select('*').eq('service_code', incoming_msg).execute()
         
         if not service_query.data:
-            # If code is invalid, you can return a 'fail' message for the gateway to text back
-            return f"<Response><Message>Error: Service code '{message_body}' not found.</Message></Response>", 200
+            response_msg = "Error: Invalid Service Code. Please check and try again."
+        else:
+            service = service_query.data[0]
+            
+            # 2. Add them to the queue
+            new_entry = {
+                "service_id": service['id'],
+                "visitor_name": f"SMS User ({sender_number[-4:]})", # Uses last 4 digits of phone
+                "status": "waiting",
+                "metadata": {"phone": sender_number} # Store phone for notifications
+            }
+            ticket = supabase.table('queue').insert(new_entry).execute()
+            
+            # 3. Calculate position
+            ahead = supabase.table('queue').select('id', count='exact')\
+                .eq('service_id', service['id'])\
+                .eq('status', 'waiting')\
+                .lt('created_at', ticket.data[0]['created_at']).execute()
+            
+            pos = ahead.count + 1
+            response_msg = f"Success! You are joined to {service['service_name']}. Your position is #{pos}. We will text you when it is your turn."
 
-        service = service_query.data
-        
-        # 3. Add the offline user to the queue
-        new_ticket = {
-            "service_id": service['id'],
-            "visitor_name": f"Mobile-{sender_phone[-4:]}", # Shows as 'Mobile-1234' on your admin dash
-            "phone_number": sender_phone,
-            "status": "waiting",
-            "is_offline": True # Flag to identify they don't have the web dashboard
-        }
-        
-        ticket_result = supabase.table('queue').insert(new_ticket).execute()
-        ticket = ticket_result.data[0]
-
-        # 4. Calculate their current position
-        ahead = supabase.table('queue').select('id', count='exact')\
-            .eq('service_id', service['id'])\
-            .eq('status', 'waiting')\
-            .lt('created_at', ticket['created_at']).execute()
-        
-        position = (ahead.count + 1)
-
-        # 5. Response to Gateway (This texts the user back immediately)
-        return f"""
-        <Response>
-            <Message>
-                Confirmed! You are #{position} in line for {service['service_name']}. 
-                We will text you when it is your turn.
-            </Message>
-        </Response>
-        """, 200
+        # Return the response in a format the SMS provider understands (TwiML for Twilio)
+        # If you use a different provider, this format might change to a simple string
+        return f"<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Message>{response_msg}</Message></Response>"
 
     except Exception as e:
-        print(f"SMS Error: {str(e)}")
-        return "Internal Server Error", 500
+        print(f"SMS Webhook Error: {e}")
+        return "Error", 500
 
-# --- API: AUTH & LOGIC FIXES ---
-
+# --- 4. AUTH & OTHER APIS ---
 @app.route('/api/auth/login', methods=['POST'])
-def unified_login():
-    """
-    FIXED: Handles Admin vs User logic
-    """
+def api_login():
+    data = request.json
+    if data.get('email') == ADMIN_EMAIL and data.get('password') == ADMIN_PASSWORD:
+        return jsonify({"status": "success", "redirect": "/masteradmin"})
+    
     try:
-        data = request.json
-        email = data.get('email')
-        password = data.get('password')
-        login_type = data.get('role') # 'admin', 'super_admin', or 'user'
+        res = supabase.auth.sign_in_with_password({"email": data.get('email'), "password": data.get('password')})
+        return jsonify({"status": "success", "redirect": "/dashboard"})
+    except:
+        return jsonify({"status": "error", "message": "Login Failed"}), 401
 
-        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        
-        # Check if user exists in your custom 'profiles' or 'orgs' table to verify role
-        user_id = res.user.id
-        profile = supabase.table('profiles').select('role').eq('id', user_id).single().execute()
-        
-        actual_role = profile.data.get('role') if profile.data else 'user'
-
-        # Security check: Don't let users login to admin panel
-        if login_type == 'admin' and actual_role != 'admin':
-            return jsonify({"status": "error", "message": "Access Denied: Not an Admin"}), 403
-        
-        # Generate name from email
-        display_name = email.split('@')[0].capitalize()
-
-        # Route redirect based on actual role
-        redirect_to = "/userpage"
-        if actual_role == 'admin': redirect_to = "/dashboard"
-        if actual_role == 'super_admin': redirect_to = "/super-admin-dashboard"
-
-        return jsonify({
-            "status": "success", 
-            "redirect": redirect_to,
-            "session": res.session.access_token,
-            "user_name": display_name
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": "Invalid Credentials"}), 401
-
-@app.route('/api/auth/user-register', methods=['POST'])
-def user_register():
-    """
-    FIXED: Responds with correct success so frontend can redirect
-    """
-    try:
-        data = request.json
-        email = data.get('email')
-        password = data.get('password')
-        
-        res = supabase.auth.sign_up({"email": email, "password": password})
-        
-        if res.user:
-            # OPTIONAL: Add user to a 'profiles' table with 'user' role here
-            return jsonify({"status": "success", "message": "Redirecting to verification..."})
-        
-        return jsonify({"status": "error", "message": "Registration failed"}), 400
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# --- QUEUE OPERATIONS (RETAINED & CLEANED) ---
-
-@app.route('/api/auth/join-frictionless', methods=['POST'])
-def join_frictionless():
-    try:
-        data = request.json
-        code = data.get('service_code', '').strip().upper()
-        name = data.get('name', 'Guest')
-
-        service_query = supabase.table('services').select('*').eq('service_code', code).execute()
-        if not service_query.data:
-            return jsonify({"status": "error", "message": "Invalid Service Code"}), 404
-
-        service = service_query.data[0]
-        new_ticket = {
-            "service_id": service['id'],
-            "org_id": service.get('org_id'),
-            "visitor_name": name,
-            "status": "waiting"
-        }
-        ticket_result = supabase.table('queue').insert(new_ticket).execute()
-        ticket = ticket_result.data[0]
-
-        return jsonify({
-            "status": "success", 
-            "ticket_id": ticket['id'],
-            "organization_name": service.get('service_name', 'Organization')
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
+# --- 5. STARTUP ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
