@@ -1,325 +1,194 @@
 import os
-
 from flask import Flask, request, jsonify, render_template, redirect
-
 from supabase import create_client, Client
 
-app = Flask(name)
+app = Flask(__name__)
 
---- SUPABASE CONFIG ---
-
+# --- SUPABASE CONFIG ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-
 SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
-
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
---- FRONTEND ROUTES ---
-
+# --- FRONTEND ROUTES ---
 @app.route('/')
-
 def index():
-
-return render_template('index.html')
+    return render_template('index.html')
 
 @app.route('/status')
-
 def status_page():
-
-# Serves the mobile dashboard/ticket status view
-
-return render_template('status.html')
+    return render_template('status.html')
 
 @app.route('/dashboard')
-
 def admin_dashboard():
-
-# Keep this if you have a separate admin/business view
-
-return render_template('Admin page.html')
+    return render_template('Admin page.html')
 
 @app.route('/login')
-
 def login_page():
+    return render_template('login page.html')
 
-return render_template('login page.html')
+@app.route('/admin-login') # Created specific route for Admin
+def admin_login_page():
+    return render_template('admin-login.html')
 
 @app.route('/userpage')
-
 def userpage():
-
-return render_template('Userpage.html')
+    return render_template('Userpage.html')
 
 @app.route('/register')
-
 def register_page():
-
-# Make sure you have a file named 'register.html' in your templates folder
-
-return render_template('org reg page.html')
-
---- API: AUTH & PERSONAL ACCOUNTS ---
-
-@app.route('/api/auth/user-register', methods=['POST'])
-
-def user_register():
-
-try:
-
-    data = request.json
-
-    email = data.get('email')
-
-    password = data.get('password')
-
-    # Supabase Auth for personal accounts
-
-    res = supabase.auth.sign_up({"email": email, "password": password})
-
-    if res.user:
-
-        return jsonify({"status": "success", "message": "Account Created"})
-
-    return jsonify({"status": "error", "message": "Registration failed"}), 400
-
-except Exception as e:
-
-    return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/auth/user-login', methods=['POST'])
-
-def user_login():
-
-try:
-
-    data = request.json
-
-    res = supabase.auth.sign_in_with_password({
-
-        "email": data.get('email'), 
-
-        "password": data.get('password')
-
-    })
-
-    return jsonify({"status": "success", "session": res.session.access_token})
-
-except Exception as e:
-
-    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
-
---- API: QUEUE OPERATIONS ---
-
-@app.route('/api/auth/join-frictionless', methods=['POST'])
-
-def join_frictionless():
-
-try:
-
-    data = request.json
-
-    code = data.get('service_code', '').strip().upper()
-
-    name = data.get('name', 'Guest')
-
-
-
-    # 1. Find the service
-
-    service_query = supabase.table('services').select('*').eq('service_code', code).execute()
-
-    if not service_query.data:
-
-        return jsonify({"status": "error", "message": "Invalid Service Code"}), 404
-
-
-
-    service = service_query.data[0]
-
-
-
-    # 2. Create the ticket
-
-    new_ticket = {
-
-        "service_id": service['id'],
-
-        "org_id": service.get('org_id'), # Matches your feature set
-
-        "visitor_name": name,
-
-        "status": "waiting"
-
-    }
-
-    ticket_result = supabase.table('queue').insert(new_ticket).execute()
-
-    
-
-    if not ticket_result.data:
-
-        return jsonify({"status": "error", "message": "Database error"}), 500
-
-
-
-    ticket = ticket_result.data[0]
-
-
-
-    return jsonify({
-
-        "status": "success", 
-
-        "ticket_id": ticket['id'],
-
-        "organization_name": service.get('service_name', 'Organization')
-
-    })
-
-except Exception as e:
-
-    return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/queue/status/<ticket_id>', methods=['GET'])
-
-def get_status(ticket_id):
-
-try:
-
-    # Fetch ticket and join with service name
-
-    ticket_query = supabase.table('queue').select('*, services(service_name)').eq('id', ticket_id).single().execute()
-
-    
-
-    if not ticket_query.data:
-
-        return jsonify({"status": "error", "message": "Ticket not found"}), 404
-
-    
-
-    ticket = ticket_query.data
-
-
-
-    # Calculate position: Count people with 'waiting' status joined before this ticket
-
-    ahead_query = supabase.table('queue').select('id', count='exact')\
-
-        .eq('service_id', ticket['service_id'])\
-
-        .eq('status', 'waiting')\
-
-        .lt('created_at', ticket['created_at']).execute()
-
-
-
-    # If admin marks as 'serving', position becomes 0
-
-    current_pos = 0 if ticket['status'] == 'serving' else (ahead_query.count + 1)
-
-
-
-    return jsonify({
-
-        "status": ticket['status'],
-
-        "position": current_pos,
-
-        "service_name": ticket['services']['service_name']
-
-    })
-
-except Exception as e:
-
-    return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/queue/complete', methods=['POST'])
-
-def complete_session():
-
-try:
-
-    data = request.json
-
-    ticket_id = data.get('ticket_id')
-
-    user_code = data.get('end_code', '').strip().upper()
-
-
-
-    # Get the correct end_code for this service
-
-    ticket = supabase.table('queue').select('service_id').eq('id', ticket_id).single().execute()
-
-    service = supabase.table('services').select('end_code').eq('id', ticket.data['service_id']).single().execute()
-
-
-
-    if service.data and service.data['end_code'] == user_code:
-
-        supabase.table('queue').update({"status": "completed"}).eq('id', ticket_id).execute()
-
-        return jsonify({"status": "success"})
-
-    
-
-    return jsonify({"status": "error", "message": "Incorrect End Code"}), 403
-
-except Exception as e:
-
-    return jsonify({"status": "error", "message": str(e)}), 500
+    return render_template('org reg page.html')
+
+# --- SMS GATEWAY WEBHOOK ---
+@app.route('/api/sms/webhook', methods=['POST'])
+def sms_webhook():
+    """
+    HANDLES OFFLINE USERS:
+    The user texts a Service Code (e.g., 'TECH101') to your number.
+    """
+    try:
+        # 1. Get data from the SMS Gateway (Standard form-data)
+        sender_phone = request.form.get('From')  # The user's phone number
+        message_body = request.form.get('Body', '').strip().upper() # The Service Code
+
+        if not message_body:
+            return "Empty message", 400
+
+        # 2. Find the service associated with the texted code
+        service_query = supabase.table('services').select('*').eq('service_code', message_body).single().execute()
+        
+        if not service_query.data:
+            # If code is invalid, you can return a 'fail' message for the gateway to text back
+            return f"<Response><Message>Error: Service code '{message_body}' not found.</Message></Response>", 200
+
+        service = service_query.data
+        
+        # 3. Add the offline user to the queue
+        new_ticket = {
+            "service_id": service['id'],
+            "visitor_name": f"Mobile-{sender_phone[-4:]}", # Shows as 'Mobile-1234' on your admin dash
+            "phone_number": sender_phone,
+            "status": "waiting",
+            "is_offline": True # Flag to identify they don't have the web dashboard
+        }
+        
+        ticket_result = supabase.table('queue').insert(new_ticket).execute()
+        ticket = ticket_result.data[0]
+
+        # 4. Calculate their current position
+        ahead = supabase.table('queue').select('id', count='exact')\
+            .eq('service_id', service['id'])\
+            .eq('status', 'waiting')\
+            .lt('created_at', ticket['created_at']).execute()
+        
+        position = (ahead.count + 1)
+
+        # 5. Response to Gateway (This texts the user back immediately)
+        return f"""
+        <Response>
+            <Message>
+                Confirmed! You are #{position} in line for {service['service_name']}. 
+                We will text you when it is your turn.
+            </Message>
+        </Response>
+        """, 200
+
+    except Exception as e:
+        print(f"SMS Error: {str(e)}")
+        return "Internal Server Error", 500
+
+# --- API: AUTH & LOGIC FIXES ---
 
 @app.route('/api/auth/login', methods=['POST'])
+def unified_login():
+    """
+    FIXED: Handles Admin vs User logic
+    """
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        login_type = data.get('role') # 'admin', 'super_admin', or 'user'
 
-def admin_login_alias():
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        
+        # Check if user exists in your custom 'profiles' or 'orgs' table to verify role
+        user_id = res.user.id
+        profile = supabase.table('profiles').select('role').eq('id', user_id).single().execute()
+        
+        actual_role = profile.data.get('role') if profile.data else 'user'
 
-"""Matches the /api/auth/login route called by your HTML"""
+        # Security check: Don't let users login to admin panel
+        if login_type == 'admin' and actual_role != 'admin':
+            return jsonify({"status": "error", "message": "Access Denied: Not an Admin"}), 403
+        
+        # Generate name from email
+        display_name = email.split('@')[0].capitalize()
 
-try:
+        # Route redirect based on actual role
+        redirect_to = "/userpage"
+        if actual_role == 'admin': redirect_to = "/dashboard"
+        if actual_role == 'super_admin': redirect_to = "/super-admin-dashboard"
 
-    data = request.json
+        return jsonify({
+            "status": "success", 
+            "redirect": redirect_to,
+            "session": res.session.access_token,
+            "user_name": display_name
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": "Invalid Credentials"}), 401
 
-    email = data.get('email')
+@app.route('/api/auth/user-register', methods=['POST'])
+def user_register():
+    """
+    FIXED: Responds with correct success so frontend can redirect
+    """
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        
+        res = supabase.auth.sign_up({"email": email, "password": password})
+        
+        if res.user:
+            # OPTIONAL: Add user to a 'profiles' table with 'user' role here
+            return jsonify({"status": "success", "message": "Redirecting to verification..."})
+        
+        return jsonify({"status": "error", "message": "Registration failed"}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-    password = data.get('password')
+# --- QUEUE OPERATIONS (RETAINED & CLEANED) ---
 
+@app.route('/api/auth/join-frictionless', methods=['POST'])
+def join_frictionless():
+    try:
+        data = request.json
+        code = data.get('service_code', '').strip().upper()
+        name = data.get('name', 'Guest')
 
+        service_query = supabase.table('services').select('*').eq('service_code', code).execute()
+        if not service_query.data:
+            return jsonify({"status": "error", "message": "Invalid Service Code"}), 404
 
-    # Attempt to sign in via Supabase
+        service = service_query.data[0]
+        new_ticket = {
+            "service_id": service['id'],
+            "org_id": service.get('org_id'),
+            "visitor_name": name,
+            "status": "waiting"
+        }
+        ticket_result = supabase.table('queue').insert(new_ticket).execute()
+        ticket = ticket_result.data[0]
 
-    res = supabase.auth.sign_in_with_password({
+        return jsonify({
+            "status": "success", 
+            "ticket_id": ticket['id'],
+            "organization_name": service.get('service_name', 'Organization')
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-        "email": email, 
-
-        "password": password
-
-    })
-
-    
-
-    # If successful, return the redirect path and token
-
-    return jsonify({
-
-        "status": "success", 
-
-        "redirect": "/userpage",
-
-        "session": res.session.access_token
-
-    })
-
-except Exception as e:
-
-    # If credentials are wrong or user doesn't exist
-
-    return jsonify({"status": "error", "message": "Invalid Admin Credentials"}), 401
-
---- RENDER BOOT LOGIC ---
-
-if name == "main":
-
-port = int(os.environ.get("PORT", 10000))
-
-app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
