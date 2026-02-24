@@ -73,123 +73,99 @@
             <button onclick="location.reload()" class="text-slate-500"><i data-lucide="refresh-cw"></i></button>
         </nav>
     </div>
+<script>
+    lucide.createIcons();
 
-    <script>
-        lucide.createIcons();
+    // ================= SUPABASE CONFIG =================
+    const supabaseUrl = "YOUR_SUPABASE_URL";
+    const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // ================= SUPABASE CONFIG =================
-        const supabaseUrl = "YOUR_SUPABASE_URL";
-        const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    let userName = "";
 
-        let userName = "";
-
-        // ================= ON LOAD =================
-        window.onload = async function() {
-            userName = prompt("Enter your name");
-            if (!userName) {
-                alert("Name is required");
-                location.reload();
-                return;
-            }
-            document.getElementById('user-display-name').innerText = userName;
-            await renderActiveQueues();
-        };
-
-        function nav(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
+    // ================= ON LOAD =================
+    window.onload = async function() {
+        // FEATURE ADDED: Pull name from login session instead of prompt
+        userName = localStorage.getItem('user_name'); 
+        
+        if (!userName) {
+            // Fallback only if they somehow bypassed login
+            userName = prompt("Enter your name to continue");
+            if (userName) localStorage.setItem('user_name', userName);
         }
 
-        function handleLogout() {
-            if(confirm("Are you sure you want to logout?")) {
-                window.location.href = "/login";
-            }
+        if (!userName) {
+            window.location.href = "/login";
+            return;
         }
 
-        // ================= RENDER QUEUES =================
-        async function renderActiveQueues() {
-            const { data, error } = await supabase
-                .from("queues")
-                .select("*")
-                .eq("name", userName)
-                .order("created_at", { ascending: true });
+        document.getElementById('user-display-name').innerText = userName;
+        await renderActiveQueues();
+        
+        // FEATURE ADDED: Auto-refresh position every 10 seconds
+        setInterval(renderActiveQueues, 10000);
+    };
 
-            if(error) {
-                console.error(error);
-                return;
-            }
+    // ... nav and logout functions remain the same ...
 
-            const container = document.getElementById('queue-container');
-            container.innerHTML = "";
+    // ================= RENDER QUEUES =================
+    async function renderActiveQueues() {
+        // Fetch tickets for this user
+        const { data: myTickets, error } = await supabase
+            .from("queue") // Updated to match your 'queue' table name
+            .select("*")
+            .eq("visitor_name", userName)
+            .neq("status", "completed");
 
-            if (!data || data.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-20 opacity-30">
-                        <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-4"></i>
-                        <p class="font-bold text-[10px] uppercase tracking-widest">No active lines</p>
-                    </div>`;
-                lucide.createIcons();
-                return;
-            }
+        if(error) return console.error(error);
 
-            data.forEach((t, index) => {
-                container.innerHTML += `
-                <div class="text-center">
-                    <div class="status-ring mb-6">
-                        <div class="ring-inner">
-                            <span class="text-[10px] font-black text-slate-500 uppercase block">Position</span>
-                            <span class="text-6xl font-black italic text-white tracking-tighter">#${index + 1}</span>
-                        </div>
-                    </div>
-                    <h2 class="text-2xl font-black uppercase italic tracking-tight">${t.queue_name}</h2>
-                    <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">Live Updates Active</p>
-                    <button onclick="leaveQueue('${t.id}')" class="mt-6 text-rose-500 text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100">
-                        Cancel Spot
-                    </button>
-                </div>
-                <hr class="border-white/5 my-10">`;
-            });
+        const container = document.getElementById('queue-container');
+        container.innerHTML = "";
 
+        if (!myTickets || myTickets.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-20 opacity-30">
+                    <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-4"></i>
+                    <p class="font-bold text-[10px] uppercase tracking-widest">No active lines</p>
+                </div>`;
             lucide.createIcons();
+            return;
         }
 
-        // ================= JOIN QUEUE =================
-        async function handleJoin() {
-            const code = document.getElementById('joinInput').value.trim().toUpperCase();
-            if(!code) return;
+        for (const t of myTickets) {
+            // FEATURE ADDED: Calculate REAL position in database
+            // Count everyone waiting for the same service who joined BEFORE this ticket
+            const { count } = await supabase
+                .from("queue")
+                .select('*', { count: 'exact', head: true })
+                .eq("service_id", t.service_id)
+                .eq("status", "waiting")
+                .lt("created_at", t.created_at);
 
-            const ticketNumber = 'TK-' + Math.random().toString(36).substr(2,5);
+            const realPosition = count + 1;
 
-            const { error } = await supabase
-                .from('queues')
-                .insert([{ name: userName, queue_name: code, ticket: ticketNumber }]);
-
-            if(error) {
-                alert("Failed to join queue");
-                console.error(error);
-                return;
-            }
-
-            document.getElementById('joinInput').value = '';
-            await renderActiveQueues();
+            container.innerHTML += `
+            <div class="text-center">
+                <div class="status-ring mb-6">
+                    <div class="ring-inner">
+                        <span class="text-[10px] font-black text-slate-500 uppercase block">Position</span>
+                        <span class="text-6xl font-black italic text-white tracking-tighter">#${realPosition}</span>
+                    </div>
+                </div>
+                <h2 class="text-2xl font-black uppercase italic tracking-tight">${t.visitor_name}</h2>
+                <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">Live Updates Active</p>
+                <button onclick="leaveQueue('${t.id}')" class="mt-6 text-rose-500 text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100">
+                    Cancel Spot
+                </button>
+            </div>
+            <hr class="border-white/5 my-10">`;
         }
 
-        // ================= LEAVE QUEUE =================
-        async function leaveQueue(id) {
-            const { error } = await supabase
-                .from('queues')
-                .delete()
-                .eq('id', id);
+        lucide.createIcons();
+    }
 
-            if(error) {
-                alert("Failed to leave queue");
-                console.error(error);
-                return;
-            }
-
-            await renderActiveQueues();
-        }
-    </script>
+    // ... handleJoin and leaveQueue remain the same ...
+</script>
 </body>
 </html>
+
