@@ -72,7 +72,20 @@
             <button onclick="nav('home')" class="text-cyan-400"><i data-lucide="home"></i></button>
             <button onclick="location.reload()" class="text-slate-500"><i data-lucide="refresh-cw"></i></button>
         </nav>
+
+        <nav>
+    <div class="nav-item active" onclick="showSection('monitor')">Monitor</div>
+    <div class="nav-item" onclick="showSection('history')">Intelligence (Report)</div>
+    <div class="nav-item" onclick="showSection('restore')">Restore</div>
+</nav>
+
+<section id="sec-monitor" class="view-content block"> ... </section>
+<section id="sec-history" class="view-content hidden">
+    <table id="report-table">
+        </table>
+</section>
     </div>
+    
 <script>
     lucide.createIcons();
 
@@ -165,7 +178,37 @@
     }
 
     // ... handleJoin and leaveQueue remain the same ...
+    <script>
+function showSection(sectionId) {
+    // 1. Hide all sections
+    document.querySelectorAll('.view-content').forEach(sec => {
+        sec.classList.add('hidden');
+        sec.classList.remove('block');
+    });
+
+    // 2. Show the clicked one
+    const target = document.getElementById('sec-' + sectionId);
+    target.classList.remove('hidden');
+    target.classList.add('block');
+
+    // 3. If it's the report page, fetch data from Flask
+    if(sectionId === 'history') {
+        fetch('/api/reports')
+            .then(res => res.json())
+            .then(data => {
+                const table = document.getElementById('report-table');
+                table.innerHTML = data.map(row => `
+                    <tr>
+                        <td>${row.visitor_name}</td>
+                        <td>${row.status}</td>
+                    </tr>
+                `).join('');
+            });
+    }
+}
+</script>
 </script>
 </body>
 </html>
+
 
