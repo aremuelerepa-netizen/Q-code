@@ -1,186 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0f172a">
-<title>Business Registration | Q-CODE</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-    body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
-    .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); }
-    .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s; }
-    .input-field:focus { border-color: #22d3ee; outline: none; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>Business Registration | Q-CODE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); }
+        .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s; }
+        .input-field:focus { border-color: #22d3ee; outline: none; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); }
+    </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
 
-<div class="max-w-2xl mx-auto">
-    <div class="flex items-center justify-between mb-12">
-        <div class="flex items-center gap-2">
-            <div class="w-10 h-10 btn-cyan rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                <i data-lucide="zap"></i>
+    <div class="max-w-2xl mx-auto">
+        <div class="flex items-center justify-between mb-12">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 btn-cyan rounded-xl flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="zap"></i>
+                </div>
+                <span class="text-2xl font-black tracking-tighter uppercase">Q-CODE</span>
             </div>
-            <span class="text-2xl font-black tracking-tighter uppercase">Q-CODE</span>
+            <a href="/" class="text-xs font-bold text-slate-400 hover:text-white transition uppercase tracking-widest">Home</a>
         </div>
-        <a href="/" class="text-xs font-bold text-slate-400 hover:text-white transition uppercase tracking-widest">Home</a>
-    </div>
 
-    <div id="registration-container" class="glass-card rounded-3xl p-6 md:p-10 shadow-2xl">
-        <form id="regForm" class="space-y-6">
-            <div class="space-y-2">
-                <h2 class="text-3xl font-black">Partner with us.</h2>
-                <p class="text-slate-400">Onboard your business to start managing queues.</p>
-            </div>
+        <div id="registration-container" class="glass-card rounded-3xl p-6 md:p-10 shadow-2xl">
+            <form id="regForm" class="space-y-6">
+                <div class="space-y-2">
+                    <h2 class="text-3xl font-black">Partner with us.</h2>
+                    <p class="text-slate-400">Onboard your business to start managing queues.</p>
+                </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Organization Name</label>
-                    <input type="text" name="orgName" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="e.g. Zenith Bank">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Official Email</label>
-                    <input type="email" name="email" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="admin@business.com">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Phone Number (For Alerts)</label>
-                    <input type="tel" name="phone" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="2348012345678">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Verification File</label>
-                    <div class="relative border-2 border-dashed border-slate-700 rounded-xl p-2 bg-slate-900/40">
-                        <input type="file" name="verificationDoc" required accept=".pdf,.jpg,.jpeg,.png" id="fileInput" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/10 file:text-cyan-400 hover:file:bg-cyan-500/20">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Organization Name</label>
+                        <input type="text" name="orgName" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="e.g. Zenith Bank">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Official Email</label>
+                        <input type="email" name="email" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="admin@business.com">
                     </div>
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Password</label>
-                    <input type="password" id="pass" name="password" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="Min. 8 characters">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Phone Number (For Alerts)</label>
+                        <input type="tel" name="phone" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="2348012345678">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Verification File</label>
+                        <div class="relative border-2 border-dashed border-slate-700 rounded-xl p-2 bg-slate-900/40">
+                             <input type="file" name="verificationDoc" required accept=".pdf,.jpg,.jpeg,.png" id="fileInput" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/10 file:text-cyan-400 hover:file:bg-cyan-500/20">
+                        </div>
+                    </div>
                 </div>
-                <div class="space-y-2">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Confirm Password</label>
-                    <input type="password" id="confirmPass" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="Repeat password">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Password</label>
+                        <input type="password" id="pass" name="password" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="Min. 8 characters">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Confirm Password</label>
+                        <input type="password" id="confirmPass" required class="input-field w-full px-4 py-3 rounded-xl" placeholder="Repeat password">
+                    </div>
                 </div>
+
+                <button type="submit" id="submitBtn" class="w-full py-5 btn-cyan text-white font-black rounded-2xl shadow-xl shadow-cyan-500/20 hover:scale-[1.01] transition-transform active:scale-95 text-lg">
+                    Create Account
+                </button>
+
+                <div class="pt-4 text-center">
+                    <p class="text-slate-400 text-sm">
+                        Already have a business account? 
+                        <a href="/login" class="text-cyan-400 font-bold hover:underline ml-1">Log in here</a>
+                    </p>
+                </div>
+            </form>
+
+            <div id="loadingState" class="hidden text-center py-20 space-y-6">
+                <div class="relative w-20 h-20 mx-auto">
+                    <div class="absolute inset-0 border-4 border-t-cyan-500 rounded-full animate-spin"></div>
+                </div>
+                <p class="text-xl font-bold text-cyan-400">Uploading Documents...</p>
             </div>
 
-            <button type="submit" id="submitBtn" class="w-full py-5 btn-cyan text-white font-black rounded-2xl shadow-xl shadow-cyan-500/20 hover:scale-[1.01] transition-transform active:scale-95 text-lg">
-                Create Account
-            </button>
-
-            <div class="pt-4 text-center">
-                <p class="text-slate-400 text-sm">
-                    Already have a business account? 
-                    <a href="/login" class="text-cyan-400 font-bold hover:underline ml-1">Log in here</a>
-                </p>
+            <div id="successState" class="hidden text-center py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div class="w-24 h-24 bg-cyan-500/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto">
+                    <i data-lucide="check-circle" class="w-12 h-12"></i>
+                </div>
+                <h2 class="text-4xl font-black">Application Received!</h2>
+                <p class="text-slate-400 max-w-sm mx-auto">We are reviewing your CAC documents. You will get an SMS/Email alert once verified.</p>
+                <button onclick="window.location.href='/'" class="px-8 py-3 border border-slate-700 rounded-full text-slate-400 hover:text-white transition font-bold">Return Home</button>
             </div>
-        </form>
-
-        <div id="loadingState" class="hidden text-center py-20 space-y-6">
-            <div class="relative w-20 h-20 mx-auto">
-                <div class="absolute inset-0 border-4 border-t-cyan-500 rounded-full animate-spin"></div>
-            </div>
-            <p class="text-xl font-bold text-cyan-400">Uploading Documents...</p>
-        </div>
-
-        <div id="successState" class="hidden text-center py-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div class="w-24 h-24 bg-cyan-500/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto">
-                <i data-lucide="check-circle" class="w-12 h-12"></i>
-            </div>
-            <h2 class="text-4xl font-black">Application Received!</h2>
-            <p class="text-slate-400 max-w-sm mx-auto">We are reviewing your CAC documents. You will get an SMS/Email alert once verified.</p>
-            <button onclick="window.location.href='/'" class="px-8 py-3 border border-slate-700 rounded-full text-slate-400 hover:text-white transition font-bold">Return Home</button>
         </div>
     </div>
-</div>
 
-<script>
-lucide.createIcons();
+    <script>
+        lucide.createIcons();
 
-// ================= SUPABASE CONFIG =================
-const supabaseUrl = "YOUR_SUPABASE_URL";
-const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        const regForm = document.getElementById('regForm');
+        
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-const regForm = document.getElementById('regForm');
+            const pass = document.getElementById('pass').value;
+            const confirm = document.getElementById('confirmPass').value;
 
-regForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+            if (pass !== confirm) {
+                alert("Passwords do not match!");
+                return;
+            }
 
-    const pass = document.getElementById('pass').value;
-    const confirm = document.getElementById('confirmPass').value;
-    if(pass !== confirm){
-        alert("Passwords do not match!");
-        return;
-    }
+            // UI Transition
+            document.getElementById('regForm').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
 
-    const orgName = regForm.orgName.value.trim();
-    const email = regForm.email.value.trim();
-    const phone = regForm.phone.value.trim();
-    const file = regForm.verificationDoc.files[0];
+            const formData = new FormData(regForm);
 
-    if(!file){
-        alert("Please upload a verification file.");
-        return;
-    }
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    body: formData // Correct way to send files + text
+                });
 
-    // UI Transition
-    regForm.classList.add('hidden');
-    document.getElementById('loadingState').classList.remove('hidden');
+                const result = await response.json();
 
-    try {
-        // 1️⃣ Create business account (Supabase Auth)
-        const { data: user, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password: pass
+                if (result.status === 'success') {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('successState').classList.remove('hidden');
+                } else {
+                    alert("Registration failed: " + result.message);
+                    location.reload();
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred. Please check your connection.");
+                location.reload();
+            }
         });
-
-        if(signUpError) throw signUpError;
-
-        // 2️⃣ Upload verification file
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${orgName.replace(/\s/g, '_')}.${fileExt}`;
-        const { data: fileData, error: uploadError } = await supabase.storage
-            .from('verification_docs')
-            .upload(fileName, file);
-
-        if(uploadError) throw uploadError;
-
-        const fileURL = supabase.storage.from('verification_docs').getPublicUrl(fileName).data.publicUrl;
-
-        // 3️⃣ Insert into organizations table
-        const { data: orgData, error: orgError } = await supabase
-            .from('organizations')
-            .insert([{
-                name: orgName,
-                email,
-                phone,
-                verification_file: fileName,
-                status: 'pending',
-                user_id: user.user.id
-            }]);
-
-        if(orgError) throw orgError;
-
-        // ✅ Show success state
-        document.getElementById('loadingState').classList.add('hidden');
-        document.getElementById('successState').classList.remove('hidden');
-
-    } catch (err){
-        console.error(err);
-        alert("Registration failed: " + err.message);
-        location.reload();
-    }
-});
-</script>
-
+    </script>
 </body>
 </html>
