@@ -1,247 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q-Code | Login to Enterprise</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --bg-dark: #020617;
-            --accent-cyan: #22d3ee;
-            --accent-blue: #0ea5e9;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --card-glass: rgba(30, 41, 59, 0.4);
-            --border: rgba(255, 255, 255, 0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-
-        body {
-            background: var(--bg-dark);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-main);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Back to Home Button */
-        .back-home {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: 0.3s;
-            z-index: 100;
-        }
-        .back-home:hover { color: var(--accent-cyan); }
-
-        .bg-glow {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, rgba(2, 6, 23, 0) 70%);
-            border-radius: 50%;
-            z-index: -1;
-            filter: blur(60px);
-        }
-
-        .login-card {
-            background: var(--card-glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            width: 90%;
-            max-width: 420px;
-            padding: 50px 40px;
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            z-index: 10;
-        }
-
-        .logo-area {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            border-radius: 16px;
-            margin-bottom: 24px;
-            color: var(--bg-dark);
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.4);
-        }
-
-        h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
-        p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 35px; }
-        .form-group { text-align: left; margin-bottom: 20px; }
-        
-        label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
-
-        input {
-            width: 100%;
-            padding: 14px 18px;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            outline: none;
-            transition: 0.3s;
-        }
-
-        input:focus {
-            border-color: var(--accent-cyan);
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1);
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            margin-top: 10px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            border: none;
-            border-radius: 12px;
-            color: var(--bg-dark);
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-login:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(34, 211, 238, 0.3);
-        }
-
-        .btn-login:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .footer-links {
-            margin-top: 25px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .footer-links a { color: var(--accent-cyan); text-decoration: none; font-weight: 600; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-CODE | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: white; }
+        .glass { background: rgba(30, 41, 59, 0.45); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .btn-cyan { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); transition: all 0.3s ease; }
+        .btn-cyan:hover { opacity: 0.9; transform: translateY(-1px); }
+        .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .input-field:focus { border-color: #22d3ee; outline: none; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    <a href="/" class="back-home"><i data-lucide="chevron-left"></i> BACK TO HOME</a>
+    <div id="notifBox" class="fixed top-5 right-5 z-[200] max-w-sm w-full hidden">
+        <div class="glass p-4 rounded-2xl border-l-4 border-cyan-400 flex items-center gap-3 shadow-2xl">
+            <i data-lucide="info" class="text-cyan-400 w-5 h-5"></i>
+            <p id="notifMessage" class="text-xs font-bold text-slate-200"></p>
+        </div>
+    </div>
 
-    <div class="bg-glow" style="top: -100px; left: -100px;"></div>
-    <div class="bg-glow" style="bottom: -100px; right: -100px;"></div>
+    <div class="glass w-full max-w-[400px] rounded-[32px] p-8 md:p-10 border-white/10 shadow-2xl">
+        <div class="flex flex-col items-center mb-8">
+            <div class="w-12 h-12 btn-cyan rounded-xl flex items-center justify-center mb-4">
+                <i data-lucide="zap" class="w-6 h-6 text-white fill-current"></i>
+            </div>
+            <h2 id="formTitle" class="text-2xl font-black uppercase tracking-tight italic">Welcome Back</h2>
+            <p id="formSubtitle" class="text-slate-400 text-xs uppercase tracking-widest mt-2">Access your business portal</p>
+        </div>
 
-    <div class="login-card">
-        <div class="logo-area">
-            <i data-lucide="zap"></i>
-        </div>
-        <h1>Welcome Back</h1>
-        <p class="subtitle">Access your Q-Code Enterprise Panel</p>
+        <div id="loginSection" class="space-y-4">
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Email Address</label>
+                <input type="email" id="loginEmail" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="name@company.com">
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Password</label>
+                <input type="password" id="loginPass" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="••••••••">
+            </div>
+            <button onclick="handleLogin()" id="loginBtn" class="btn-cyan w-full py-4 rounded-2xl text-slate-950 font-black uppercase text-xs tracking-widest mt-4">
+                Sign In
+            </button>
+            <p class="text-center text-[10px] text-slate-500 font-bold uppercase mt-6">
+                Don't have an account? 
+                <span onclick="toggleView('register')" class="text-cyan-400 cursor-pointer hover:underline ml-1">Register</span>
+            </p>
+        </div>
 
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Admin Email</label>
-                <input type="email" id="email" placeholder="admin@company.com" required>
-            </div>
+        <div id="registerSection" class="space-y-4 hidden">
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Email Address</label>
+                <input type="email" id="regEmail" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="name@company.com">
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase ml-1">Create Password</label>
+                <input type="password" id="regPass" class="input-field w-full p-4 rounded-2xl text-sm" placeholder="Min. 8 characters">
+            </div>
+            <button onclick="handleRegister()" id="regBtn" class="btn-cyan w-full py-4 rounded-2xl text-slate-950 font-black uppercase text-xs tracking-widest mt-4">
+                Create Account
+            </button>
+            <p class="text-center text-[10px] text-slate-500 font-bold uppercase mt-6">
+                Already registered? 
+                <span onclick="toggleView('login')" class="text-cyan-400 cursor-pointer hover:underline ml-1">Login</span>
+            </p>
+        </div>
+        
+        <div class="mt-8 pt-6 border-t border-white/5 text-center">
+            <a href="/" class="text-[10px] font-bold text-slate-500 uppercase hover:text-white transition-colors">
+                ← Back to Home
+            </a>
+        </div>
+    </div>
 
-            <div class="form-group">
-                <label for="password">Access Key</label>
-                <input type="password" id="password" placeholder="••••••••" required>
-            </div>
+    <script>
+        lucide.createIcons();
 
-            <button type="submit" class="btn-login" id="submitBtn">
-                <span>SECURE LOGIN</span> <i data-lucide="arrow-right"></i>
-            </button>
-        </form>
+        function notify(msg) {
+            const box = document.getElementById('notifBox');
+            document.getElementById('notifMessage').innerText = msg;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 4000);
+        }
 
-        <div class="footer-links">
-            Don't have an account? <a href="/register">Register Company</a>
-        </div>
-    </div>
+        function toggleView(view) {
+            const loginSection = document.getElementById('loginSection');
+            const registerSection = document.getElementById('registerSection');
+            const title = document.getElementById('formTitle');
+            const subtitle = document.getElementById('formSubtitle');
 
-    <script>
-        lucide.createIcons();
+            if (view === 'register') {
+                loginSection.classList.add('hidden');
+                registerSection.classList.remove('hidden');
+                title.innerText = "Create Vault";
+                subtitle.innerText = "Start managing your queue";
+            } else {
+                registerSection.classList.add('hidden');
+                loginSection.classList.remove('hidden');
+                title.innerText = "Welcome Back";
+                subtitle.innerText = "Access your business portal";
+            }
+        }
 
-        const loginForm = document.getElementById('loginForm');
-        const submitBtn = document.getElementById('submitBtn');
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPass').value;
+            const btn = document.getElementById('loginBtn');
 
-        loginForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
+            if (!email || !password) return notify("Fields cannot be empty");
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span>VERIFYING...</span>`;
+            btn.disabled = true;
+            btn.innerText = "AUTHENTICATING...";
 
-            const formData = {
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value
-            };
+            try {
+                const res = await fetch('/api/auth/user-login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
 
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
+                if (data.status === 'success') {
+                    // Save token if needed for Supabase RLS
+                    localStorage.setItem('sb_token', data.session);
+                    window.location.href = '/userpage';
+                } else {
+                    notify(data.message);
+                    btn.disabled = false;
+                    btn.innerText = "SIGN IN";
+                }
+            } catch (err) {
+                notify("Connection Error");
+                btn.disabled = false;
+                btn.innerText = "SIGN IN";
+            }
+        }
 
-                const result = await response.json();
+        async function handleRegister() {
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPass').value;
+            const btn = document.getElementById('regBtn');
 
-                if (response.ok) {
-                    // Success (Owner or Verified Org)
-                    window.location.href = result.redirect; 
-                } else if (response.status === 403) {
-                    // Scenario: Pending verification
-                    alert("ACCESS DENIED: Your account is still being reviewed by our team. You will receive an email/SMS once verified.");
-                    resetButton();
-                } else if (response.status === 404) {
-                    // Scenario: Not in database
-                    alert("USER NOT FOUND: This email is not registered with Q-Code. Please register your organization first.");
-                    resetButton();
-                } else {
-                    // Scenario: Wrong password
-                    alert(result.message || "Invalid credentials.");
-                    resetButton();
-                }
-            } catch (error) {
-                alert("Server Connection Error. Please try again later.");
-                resetButton();
-            }
-        });
+            if (!email || !password) return notify("Fields cannot be empty");
 
-        function resetButton() {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = `<span>SECURE LOGIN</span> <i data-lucide="arrow-right"></i>`;
-            lucide.createIcons();
-        }
-    </script>
+            btn.disabled = true;
+            btn.innerText = "CREATING...";
+
+            try {
+                const res = await fetch('/api/auth/user-register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    notify("Account created! Check your email to confirm.");
+                    setTimeout(() => toggleView('login'), 2000);
+                } else {
+                    notify(data.message);
+                }
+            } catch (err) {
+                notify("Registration failed");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "CREATE ACCOUNT";
+            }
+        }
+    </script>
 </body>
 </html>
-
-next file
